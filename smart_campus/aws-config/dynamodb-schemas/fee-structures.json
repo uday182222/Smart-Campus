@@ -1,0 +1,73 @@
+{
+  "TableName": "SmartCampus-FeeStructures",
+  "KeySchema": [
+    {
+      "AttributeName": "feeStructureId",
+      "KeyType": "HASH"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "feeStructureId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "schoolId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "classId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "academicYear",
+      "AttributeType": "S"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "SchoolClassIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "schoolId",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "classId",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      },
+      "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+      }
+    },
+    {
+      "IndexName": "AcademicYearIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "academicYear",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "schoolId",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      },
+      "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+      }
+    }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}

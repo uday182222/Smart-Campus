@@ -1,0 +1,25 @@
+# Environment files - NEVER commit these
+.env
+.env.local
+.env.production
+.env.*
+**/.env
+**/.env.local
+**/.env.*
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+.expo/
+
+# Keys and certificates
+*.pem
+*.p12
+google-play-key.json
+
+# OS files
+.DS_Store

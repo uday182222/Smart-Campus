@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Smart Campus</string>
+    
+    <!-- FCM Notification Channel -->
+    <string name="default_notification_channel_id">smart_campus_notifications</string>
+    <string name="default_notification_channel_name">Smart Campus Notifications</string>
+    <string name="default_notification_channel_description">Notifications for announcements, homework, attendance, and transport updates</string>
+    
+    <!-- Notification Channel IDs -->
+    <string name="announcements_channel_id">announcements</string>
+    <string name="homework_channel_id">homework</string>
+    <string name="attendance_channel_id">attendance</string>
+    <string name="transport_channel_id">transport</string>
+    
+    <!-- Notification Channel Names -->
+    <string name="announcements_channel_name">Announcements</string>
+    <string name="homework_channel_name">Homework</string>
+    <string name="attendance_channel_name">Attendance</string>
+    <string name="transport_channel_name">Transport</string>
+    
+    <!-- Notification Channel Descriptions -->
+    <string name="announcements_channel_description">School announcements and news</string>
+    <string name="homework_channel_description">Homework assignments and updates</string>
+    <string name="attendance_channel_description">Student attendance notifications</string>
+    <string name="transport_channel_description">Bus and transport updates</string>
+</resources>

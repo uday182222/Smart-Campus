@@ -1,0 +1,266 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to get user's role from custom claims
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+    
+    // Helper function to get user's school ID from custom claims
+    function getUserSchoolId() {
+      return request.auth.token.schoolId;
+    }
+    
+    // Helper function to check if user has specific role
+    function hasRole(role) {
+      return getUserRole() == role;
+    }
+    
+    // Helper function to check if user has any of the specified roles
+    function hasAnyRole(roles) {
+      return getUserRole() in roles;
+    }
+    
+    // Helper function to check if user is admin or principal
+    function isAdminOrPrincipal() {
+      return hasAnyRole(['admin', 'principal']);
+    }
+    
+    // Helper function to check if user is school staff (principal, teacher)
+    function isSchoolStaff() {
+      return hasAnyRole(['principal', 'teacher']);
+    }
+    
+    // Helper function to check if user is transport staff (admin, principal, helper)
+    function isTransportStaff() {
+      return hasAnyRole(['admin', 'principal', 'helper']);
+    }
+    
+    // Helper function to check if user belongs to the same school
+    function isSameSchool(schoolId) {
+      return getUserSchoolId() == schoolId;
+    }
+    
+    // Helper function to check if user is parent of student
+    function isParentOfStudent(studentId) {
+      return hasRole('parent') && 
+             exists(/databases/$(database)/documents/students/$(studentId)) &&
+             get(/databases/$(database)/documents/students/$(studentId)).data.parentId == request.auth.uid;
+    }
+    
+    // Helper function to check if user is teacher of student
+    function isTeacherOfStudent(studentId) {
+      return hasRole('teacher') &&
+             exists(/databases/$(database)/documents/students/$(studentId)) &&
+             get(/databases/$(database)/documents/students/$(studentId)).data.teacherId == request.auth.uid;
+    }
+    
+    // Helper function to check if user is assigned to route
+    function isAssignedToRoute(routeId) {
+      return hasRole('helper') &&
+             exists(/databases/$(database)/documents/routes/$(routeId)) &&
+             get(/databases/$(database)/documents/routes/$(routeId)).data.helperId == request.auth.uid;
+    }
+    
+    // Schools collection
+    match /schools/{schoolId} {
+      // Admin: Full access to all schools
+      // Principal: Full access to their school only
+      allow read, write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(schoolId));
+    }
+    
+    // Students collection
+    match /students/{studentId} {
+      // Admin: Full access to all students
+      // Principal: Full access to students in their school
+      // Teacher: Read/write access to their students
+      // Parent: Read-only access to their own child
+      allow read, write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isTeacherOfStudent(studentId)) ||
+        (hasRole('parent') && isParentOfStudent(studentId));
+      
+      // Allow creation for admin and principal
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Teachers collection
+    match /teachers/{teacherId} {
+      // Admin: Full access to all teachers
+      // Principal: Full access to teachers in their school
+      // Teacher: Read-only access to their own profile
+      allow read, write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && teacherId == request.auth.uid);
+      
+      // Allow creation for admin and principal
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Parents collection
+    match /parents/{parentId} {
+      // Admin: Full access to all parents
+      // Principal: Full access to parents in their school
+      // Parent: Read-only access to their own profile
+      allow read, write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('parent') && parentId == request.auth.uid);
+      
+      // Allow creation for admin and principal
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Routes collection (Transport)
+    match /routes/{routeId} {
+      // Admin: Full access to all routes
+      // Principal: Full access to routes in their school
+      // Helper: Read-only access to assigned routes, can update stop status
+      allow read: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('helper') && isAssignedToRoute(routeId));
+      
+      allow write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId));
+      
+      // Helper can only update stop status and timestamps
+      allow update: if hasRole('helper') && 
+        isAssignedToRoute(routeId) &&
+        // Only allow updating specific fields
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stops', 'lastUpdated', 'status']);
+      
+      // Allow creation for admin and principal
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Announcements collection
+    match /announcements/{announcementId} {
+      // Admin: Full access to all announcements
+      // Principal: Full access to announcements in their school
+      // Teacher: Read/write access to announcements in their school
+      // Parent: Read-only access to announcements in their school
+      allow read: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('parent') && isSameSchool(resource.data.schoolId));
+      
+      allow write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId));
+      
+      // Allow creation for admin, principal, and teacher
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Homework collection
+    match /homework/{homeworkId} {
+      // Admin: Full access to all homework
+      // Principal: Full access to homework in their school
+      // Teacher: Read/write access to homework they created or for their students
+      // Parent: Read-only access to homework for their child
+      allow read: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('parent') && isSameSchool(resource.data.schoolId));
+      
+      allow write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId));
+      
+      // Allow creation for admin, principal, and teacher
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Attendance collection
+    match /attendance/{attendanceId} {
+      // Admin: Full access to all attendance
+      // Principal: Full access to attendance in their school
+      // Teacher: Read/write access to attendance for their students
+      // Parent: Read-only access to attendance for their child
+      allow read: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('parent') && isSameSchool(resource.data.schoolId));
+      
+      allow write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(resource.data.schoolId));
+      
+      // Allow creation for admin, principal, and teacher
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId)) ||
+        (hasRole('teacher') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // User profiles collection (for additional user data)
+    match /userProfiles/{userId} {
+      // Users can only access their own profile
+      // Admin can access all profiles
+      // Principal can access profiles in their school
+      allow read, write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        userId == request.auth.uid;
+      
+      // Allow creation for authenticated users
+      allow create: if request.auth != null;
+    }
+    
+    // Device tokens collection (for push notifications)
+    match /users/{userId}/deviceTokens/{tokenId} {
+      // Users can only manage their own device tokens
+      // Cloud Functions can read all tokens for sending notifications
+      allow read, write: if userId == request.auth.uid;
+      
+      // Allow creation for authenticated users
+      allow create: if request.auth != null && userId == request.auth.uid;
+    }
+    
+    // User notifications collection (notification history)
+    match /users/{userId}/notifications/{notificationId} {
+      // Users can only access their own notifications
+      // Cloud Functions can write notifications
+      allow read: if userId == request.auth.uid;
+      allow write: if true; // Cloud Functions can write
+      
+      // Allow creation for authenticated users
+      allow create: if request.auth != null;
+    }
+    
+    // Transport stops collection (for real-time tracking)
+    match /transportStops/{stopId} {
+      // Admin: Full access to all stops
+      // Principal: Full access to stops in their school
+      // Helper: Read/write access to stops on their assigned routes
+      allow read: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId)) ||
+        (hasRole('helper') && isAssignedToRoute(resource.data.routeId));
+      
+      allow write: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(resource.data.schoolId));
+      
+      // Helper can only update stop status and timestamps
+      allow update: if hasRole('helper') && 
+        isAssignedToRoute(resource.data.routeId) &&
+        // Only allow updating specific fields
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'lastUpdated', 'arrivalTime', 'departureTime']);
+      
+      // Allow creation for admin and principal
+      allow create: if hasRole('admin') || 
+        (hasRole('principal') && isSameSchool(request.resource.data.schoolId));
+    }
+    
+    // Default deny rule for any collection not explicitly defined
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

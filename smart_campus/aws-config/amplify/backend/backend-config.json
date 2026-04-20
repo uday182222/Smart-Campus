@@ -1,0 +1,60 @@
+{
+  "backend": {
+    "plugins": {
+      "awscloudformation": {
+        "Region": "us-east-1",
+        "DeploymentBucketName": "smart-campus-deployment",
+        "UnauthRoleName": "smart-campus-unauth",
+        "StackName": "smart-campus-backend",
+        "StackRegion": "us-east-1",
+        "AmplifyAppId": "d1a2b3c4e5f6g7"
+      }
+    }
+  },
+  "auth": {
+    "smartcampusauth": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false,
+      "frontendAuthConfig": {
+        "socialProviders": [],
+        "usernameAttributes": ["EMAIL"],
+        "signupAttributes": ["EMAIL"],
+        "passwordProtectionSettings": {
+          "passwordPolicyMinLength": 8,
+          "passwordPolicyCharacters": []
+        },
+        "mfaConfiguration": "OFF",
+        "mfaTypes": ["SMS"],
+        "verificationMechanisms": ["EMAIL"]
+      }
+    }
+  },
+  "api": {
+    "smartcampusapi": {
+      "service": "API Gateway",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [
+        {
+          "category": "auth",
+          "resourceName": "smartcampusauth",
+          "attributes": ["UserPoolId"]
+        }
+      ]
+    }
+  },
+  "storage": {
+    "smartcampusstorage": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation"
+    }
+  },
+  "function": {
+    "smartcampuslambda": {
+      "service": "Lambda",
+      "providerPlugin": "awscloudformation",
+      "build": true
+    }
+  }
+}

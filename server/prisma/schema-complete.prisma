@@ -1,0 +1,687 @@
+// Complete Smart Campus Management System - Database Schema
+// This schema covers all modules: Users, Attendance, Homework, Marks, Transport, Gallery, Calendar, Appointments, etc.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+enum UserRole {
+  PARENT
+  TEACHER
+  ADMIN
+  PRINCIPAL
+  SUPER_ADMIN
+  OFFICE_STAFF
+  BUS_HELPER
+  STUDENT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  GRADUATED
+}
+
+model School {
+  id                    String          @id @default(uuid())
+  name                  String
+  address               String
+  city                  String
+  state                 String
+  zipCode               String          @map("zip_code")
+  country               String          @default("India")
+  contactEmail          String          @map("contact_email")
+  contactPhone          String          @map("contact_phone")
+  logoUrl               String?         @map("logo_url")
+  status                String          @default("active") // active, trial, inactive
+  subscriptionPlan      String          @default("basic") @map("subscription_plan") // basic, standard, premium
+  subscriptionStart     DateTime        @map("subscription_start")
+  subscriptionEnd       DateTime        @map("subscription_end")
+  settings              Json?           @db.JsonB
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  users                 User[]
+  classes               Class[]
+  routes                Route[]
+  gallery               GalleryItem[]
+  events                Event[]
+  
+  @@map("schools")
+}
+
+model User {
+  id                    String          @id @default(uuid())
+  schoolId              String?         @map("school_id")
+  email                 String          @unique
+  phone                 String?
+  name                  String
+  role                  UserRole
+  status                UserStatus      @default(ACTIVE)
+  photo                 String?
+  cognitoId             String?         @unique @map("cognito_id")
+  pushToken             String?         @map("push_token")
+  metadata              Json?           @db.JsonB // Flexible field for role-specific data
+  preferences           Json?           @db.JsonB
+  lastLogin             DateTime?       @map("last_login")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  school                School?         @relation(fields: [schoolId], references: [id])
+  teacherClasses        TeacherClass[]
+  attendanceRecords     Attendance[]
+  homeworkAssignments   Homework[]      @relation("HomeworkTeacher")
+  homeworkSubmissions   HomeworkSubmission[]
+  marksEntered          Marks[]
+  remarks               Remark[]
+  parentStudents        ParentStudent[] @relation("ParentRelation")
+  studentParents        ParentStudent[] @relation("StudentRelation")
+  appointments          Appointment[]
+  notifications         Notification[]
+  activityLogs          ActivityLog[]
+  
+  @@index([schoolId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model ParentStudent {
+  id                    String          @id @default(uuid())
+  parentId              String          @map("parent_id")
+  studentId             String          @map("student_id")
+  relationship          String          // mother, father, guardian
+  isPrimary             Boolean         @default(false) @map("is_primary")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  parent                User            @relation("ParentRelation", fields: [parentId], references: [id], onDelete: Cascade)
+  student               User            @relation("StudentRelation", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
+  @@map("parent_student")
+}
+
+// ============================================================================
+// ACADEMIC MANAGEMENT
+// ============================================================================
+
+model Class {
+  id                    String          @id @default(uuid())
+  schoolId              String          @map("school_id")
+  name                  String          // "10", "9", "8"
+  section               String          // "A", "B", "C"
+  roomNumber            String?         @map("room_number")
+  capacity              Int             @default(40)
+  currentStudents       Int             @default(0) @map("current_students")
+  subjects              Json            @db.JsonB // Array of subjects
+  schedule              Json?           @db.JsonB // Weekly schedule
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  school                School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teachers              TeacherClass[]
+  attendance            Attendance[]
+  homework              Homework[]
+  exams                 Exam[]
+  
+  @@unique([schoolId, name, section])
+  @@index([schoolId])
+  @@map("classes")
+}
+
+model TeacherClass {
+  id                    String          @id @default(uuid())
+  teacherId             String          @map("teacher_id")
+  classId               String          @map("class_id")
+  subject               String
+  isClassTeacher        Boolean         @default(false) @map("is_class_teacher")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  teacher               User            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class                 Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  @@unique([teacherId, classId, subject])
+  @@index([teacherId])
+  @@index([classId])
+  @@map("teacher_classes")
+}
+
+model Attendance {
+  id                    String          @id @default(uuid())
+  classId               String          @map("class_id")
+  studentId             String          @map("student_id")
+  teacherId             String          @map("teacher_id")
+  date                  DateTime        @db.Date
+  status                String          // present, absent, late, half_day
+  remarks               String?
+  markedAt              DateTime        @default(now()) @map("marked_at")
+  
+  // Relations
+  class                 Class           @relation(fields: [classId], references: [id])
+  student               User            @relation(fields: [studentId], references: [id])
+  
+  @@unique([studentId, date])
+  @@index([classId])
+  @@index([studentId])
+  @@index([date])
+  @@map("attendance")
+}
+
+model Homework {
+  id                    String          @id @default(uuid())
+  classId               String          @map("class_id")
+  teacherId             String          @map("teacher_id")
+  subject               String
+  title                 String
+  description           String          @db.Text
+  dueDate               DateTime        @map("due_date")
+  attachments           Json?           @db.JsonB
+  status                String          @default("active") // active, archived
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  class                 Class           @relation(fields: [classId], references: [id])
+  teacher               User            @relation("HomeworkTeacher", fields: [teacherId], references: [id])
+  submissions           HomeworkSubmission[]
+  
+  @@index([classId])
+  @@index([teacherId])
+  @@index([dueDate])
+  @@map("homework")
+}
+
+model HomeworkSubmission {
+  id                    String          @id @default(uuid())
+  homeworkId            String          @map("homework_id")
+  studentId             String          @map("student_id")
+  status                String          // submitted, late, missing
+  submittedAt           DateTime?       @map("submitted_at")
+  attachments           Json?           @db.JsonB
+  teacherRemarks        String?         @map("teacher_remarks")
+  grade                 String?         // A, B, C, etc.
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  homework              Homework        @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  student               User            @relation(fields: [studentId], references: [id])
+  
+  @@unique([homeworkId, studentId])
+  @@index([homeworkId])
+  @@index([studentId])
+  @@map("homework_submissions")
+}
+
+model Exam {
+  id                    String          @id @default(uuid())
+  classId               String          @map("class_id")
+  name                  String
+  subject               String
+  examType              String          @map("exam_type") // unit_test, midterm, final
+  date                  DateTime        @db.Date
+  maxMarks              Int             @map("max_marks")
+  passingMarks          Int             @map("passing_marks")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  class                 Class           @relation(fields: [classId], references: [id])
+  marks                 Marks[]
+  
+  @@index([classId])
+  @@index([date])
+  @@map("exams")
+}
+
+model Marks {
+  id                    String          @id @default(uuid())
+  examId                String          @map("exam_id")
+  studentId             String          @map("student_id")
+  teacherId             String          @map("teacher_id")
+  marksObtained         Float           @map("marks_obtained")
+  remarks               String?
+  enteredAt             DateTime        @default(now()) @map("entered_at")
+  
+  // Relations
+  exam                  Exam            @relation(fields: [examId], references: [id])
+  teacher               User            @relation(fields: [teacherId], references: [id])
+  
+  @@unique([examId, studentId])
+  @@index([examId])
+  @@index([studentId])
+  @@map("marks")
+}
+
+model Remark {
+  id                    String          @id @default(uuid())
+  studentId             String          @map("student_id")
+  teacherId             String          @map("teacher_id")
+  category              String          // academic, behavior, achievement
+  remarkType            String          @map("remark_type") // positive, negative, neutral
+  content               String          @db.Text
+  isPrivate             Boolean         @default(false) @map("is_private")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  teacher               User            @relation(fields: [teacherId], references: [id])
+  
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([createdAt])
+  @@map("remarks")
+}
+
+// ============================================================================
+// TRANSPORT MANAGEMENT
+// ============================================================================
+
+model Route {
+  id                    String          @id @default(uuid())
+  schoolId              String          @map("school_id")
+  name                  String
+  busNumber             String          @map("bus_number")
+  helperId              String?         @map("helper_id")
+  helperName            String?         @map("helper_name")
+  helperPhone           String?         @map("helper_phone")
+  startTime             String          @map("start_time") // HH:MM
+  endTime               String          @map("end_time") // HH:MM
+  status                String          @default("active") // active, inactive
+  stops                 Json            @db.JsonB // Array of stops with coordinates
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  school                School          @relation(fields: [schoolId], references: [id])
+  tracking              RouteTracking[]
+  
+  @@index([schoolId])
+  @@index([helperId])
+  @@map("routes")
+}
+
+model RouteTracking {
+  id                    String          @id @default(uuid())
+  routeId               String          @map("route_id")
+  helperId              String          @map("helper_id")
+  latitude              Float
+  longitude             Float
+  accuracy              Float?
+  speed                 Float?
+  heading               Float?
+  timestamp             DateTime
+  stopId                String?         @map("stop_id")
+  stopStatus            String?         @map("stop_status") // reached, completed
+  studentsBoarded       Json?           @map("students_boarded") @db.JsonB
+  
+  // Relations
+  route                 Route           @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  
+  @@index([routeId])
+  @@index([timestamp])
+  @@map("route_tracking")
+}
+
+// ============================================================================
+// GALLERY MANAGEMENT
+// ============================================================================
+
+model GalleryItem {
+  id                    String          @id @default(uuid())
+  schoolId              String          @map("school_id")
+  uploadedBy            String          @map("uploaded_by")
+  type                  String          // image, video
+  url                   String
+  thumbnailUrl          String          @map("thumbnail_url")
+  caption               String?
+  tags                  Json?           @db.JsonB
+  event                 String?
+  albumId               String?         @map("album_id")
+  visibility            String          @default("public") // public, class-specific, private
+  classIds              Json?           @map("class_ids") @db.JsonB
+  fileSize              BigInt          @map("file_size")
+  dimensions            Json?           @db.JsonB
+  views                 Int             @default(0)
+  downloads             Int             @default(0)
+  uploadDate            DateTime        @default(now()) @map("upload_date")
+  
+  // Relations
+  school                School          @relation(fields: [schoolId], references: [id])
+  album                 Album?          @relation(fields: [albumId], references: [id])
+  
+  @@index([schoolId])
+  @@index([albumId])
+  @@index([uploadDate])
+  @@map("gallery_items")
+}
+
+model Album {
+  id                    String          @id @default(uuid())
+  name                  String
+  description           String?
+  coverImageUrl         String?         @map("cover_image_url")
+  visibility            String          @default("public")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  items                 GalleryItem[]
+  
+  @@map("albums")
+}
+
+// ============================================================================
+// CALENDAR & EVENTS
+// ============================================================================
+
+model Event {
+  id                    String          @id @default(uuid())
+  schoolId              String          @map("school_id")
+  title                 String
+  description           String          @db.Text
+  startDate             DateTime        @map("start_date")
+  endDate               DateTime        @map("end_date")
+  startTime             String          @map("start_time")
+  endTime               String          @map("end_time")
+  type                  String          // holiday, exam, sports, meeting, celebration, other
+  location              String
+  posterUrl             String?         @map("poster_url")
+  targetAudience        String          @map("target_audience") // all, parents, teachers, students, specific-classes
+  classIds              Json?           @map("class_ids") @db.JsonB
+  isAllDay              Boolean         @default(false) @map("is_all_day")
+  reminderSettings      Json            @map("reminder_settings") @db.JsonB
+  attendanceRequired    Boolean         @default(false) @map("attendance_required")
+  maxAttendees          Int?            @map("max_attendees")
+  currentAttendees      Int             @default(0) @map("current_attendees")
+  status                String          @default("scheduled") // scheduled, ongoing, completed, cancelled
+  createdBy             String          @map("created_by")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  school                School          @relation(fields: [schoolId], references: [id])
+  attendees             EventAttendee[]
+  reminders             EventReminder[]
+  
+  @@index([schoolId])
+  @@index([startDate])
+  @@index([type])
+  @@map("events")
+}
+
+model EventAttendee {
+  id                    String          @id @default(uuid())
+  eventId               String          @map("event_id")
+  name                  String
+  email                 String
+  phone                 String
+  status                String          @default("pending") // pending, confirmed, declined
+  responseDate          DateTime?       @map("response_date")
+  
+  // Relations
+  event                 Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId])
+  @@map("event_attendees")
+}
+
+model EventReminder {
+  id                    String          @id @default(uuid())
+  eventId               String          @map("event_id")
+  userId                String          @map("user_id")
+  timing                Int             // minutes before event
+  channels              Json            @db.JsonB // push, whatsapp, email
+  sent                  Boolean         @default(false)
+  sentAt                DateTime?       @map("sent_at")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  event                 Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_reminders")
+}
+
+// ============================================================================
+// APPOINTMENTS
+// ============================================================================
+
+model Appointment {
+  id                    String          @id @default(uuid())
+  parentId              String          @map("parent_id")
+  studentId             String          @map("student_id")
+  requestedDate         DateTime        @map("requested_date")
+  requestedTime         String          @map("requested_time")
+  duration              Int             // minutes
+  reason                String          @db.Text
+  priority              String          @default("medium") // low, medium, high, urgent
+  status                String          @default("pending") // pending, approved, rejected, rescheduled, completed, cancelled
+  assignedTo            String          @map("assigned_to") // principal, teacher, counselor, admin
+  assignedPersonId      String?         @map("assigned_person_id")
+  approvedDate          DateTime?       @map("approved_date")
+  approvedTime          String?         @map("approved_time")
+  rejectionReason       String?         @map("rejection_reason")
+  rescheduleReason      String?         @map("reschedule_reason")
+  notes                 String?         @db.Text
+  completedAt           DateTime?       @map("completed_at")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  parent                User            @relation(fields: [parentId], references: [id])
+  
+  @@index([parentId])
+  @@index([studentId])
+  @@index([status])
+  @@index([requestedDate])
+  @@map("appointments")
+}
+
+// ============================================================================
+// COMMUNICATIONS
+// ============================================================================
+
+model Notification {
+  id                    String          @id @default(uuid())
+  userId                String          @map("user_id")
+  category              String          // emergency, announcement, homework, fee, attendance, transport, appointment
+  title                 String
+  body                  String          @db.Text
+  data                  Json?           @db.JsonB
+  channels              Json            @db.JsonB // push, whatsapp, email
+  priority              String          @default("normal") // low, normal, high, critical
+  status                String          @default("pending") // pending, sent, delivered, read, failed
+  sentAt                DateTime?       @map("sent_at")
+  deliveredAt           DateTime?       @map("delivered_at")
+  readAt                DateTime?       @map("read_at")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  // Relations
+  user                  User            @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Announcement {
+  id                    String          @id @default(uuid())
+  schoolId              String?         @map("school_id")
+  title                 String
+  message               String          @db.Text
+  priority              String          @default("normal") // low, normal, high, emergency
+  targetAudience        Json            @map("target_audience") @db.JsonB
+  channels              Json            @db.JsonB // push, whatsapp, email
+  scheduledFor          DateTime?       @map("scheduled_for")
+  sentAt                DateTime?       @map("sent_at")
+  status                String          @default("draft") // draft, scheduled, sent
+  deliveryCount         Int             @default(0) @map("delivery_count")
+  acknowledgmentCount   Int             @default(0) @map("acknowledgment_count")
+  createdBy             String          @map("created_by")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  @@index([schoolId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("announcements")
+}
+
+// ============================================================================
+// SYSTEM & LOGGING
+// ============================================================================
+
+model ActivityLog {
+  id                    String          @id @default(uuid())
+  userId                String          @map("user_id")
+  action                String
+  resource              String
+  resourceId            String?         @map("resource_id")
+  details               Json?           @db.JsonB
+  ipAddress             String?         @map("ip_address")
+  userAgent             String?         @map("user_agent")
+  timestamp             DateTime        @default(now())
+  
+  // Relations
+  user                  User            @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("activity_logs")
+}
+
+model SystemSettings {
+  key                   String          @id
+  value                 Json            @db.JsonB
+  description           String?
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  updatedBy             String?         @map("updated_by")
+  
+  @@map("system_settings")
+}
+
+// ============================================================================
+// SUPPORT
+// ============================================================================
+
+model SupportTicket {
+  id                    String          @id @default(uuid())
+  userId                String          @map("user_id")
+  category              String
+  subject               String
+  description           String          @db.Text
+  attachments           Json?           @db.JsonB
+  priority              String          @default("normal") // low, normal, high, urgent
+  status                String          @default("open") // open, in_progress, resolved, closed
+  assignedTo            String?         @map("assigned_to")
+  resolution            String?         @db.Text
+  rating                Int?            // 1-5 stars
+  ratingFeedback        String?         @map("rating_feedback")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  resolvedAt            DateTime?       @map("resolved_at")
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+// ============================================================================
+// WHATSAPP & EMAIL TRACKING
+// ============================================================================
+
+model WhatsAppMessage {
+  id                    String          @id @default(uuid())
+  to                    String
+  templateName          String          @map("template_name")
+  parameters            Json            @db.JsonB
+  status                String          @default("queued") // queued, sent, delivered, read, failed
+  messageId             String?         @map("message_id") // WhatsApp message ID
+  sentAt                DateTime?       @map("sent_at")
+  deliveredAt           DateTime?       @map("delivered_at")
+  readAt                DateTime?       @map("read_at")
+  failureReason         String?         @map("failure_reason")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  @@index([to])
+  @@index([status])
+  @@index([createdAt])
+  @@map("whatsapp_messages")
+}
+
+model WhatsAppOptIn {
+  id                    String          @id @default(uuid())
+  userId                String          @map("user_id")
+  phone                 String          @unique
+  optedIn               Boolean         @default(false) @map("opted_in")
+  optInDate             DateTime?       @map("opt_in_date")
+  optOutDate            DateTime?       @map("opt_out_date")
+  consentHistory        Json            @map("consent_history") @db.JsonB
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  
+  @@index([userId])
+  @@index([phone])
+  @@map("whatsapp_opt_in")
+}
+
+model EmailLog {
+  id                    String          @id @default(uuid())
+  to                    Json            @db.JsonB // Array of recipients
+  subject               String
+  templateId            String?         @map("template_id")
+  status                String          @default("queued") // queued, sent, delivered, bounced, failed
+  messageId             String?         @map("message_id") // SES message ID
+  sentAt                DateTime?       @map("sent_at")
+  deliveredAt           DateTime?       @map("delivered_at")
+  bouncedAt             DateTime?       @map("bounced_at")
+  failureReason         String?         @map("failure_reason")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  @@index([status])
+  @@index([createdAt])
+  @@map("email_logs")
+}
+
+// ============================================================================
+// AVAILABILITY SLOTS (FOR APPOINTMENTS)
+// ============================================================================
+
+model AvailabilitySlot {
+  id                    String          @id @default(uuid())
+  personId              String          @map("person_id")
+  personType            String          @map("person_type") // principal, teacher, counselor, admin
+  date                  DateTime        @db.Date
+  startTime             String          @map("start_time")
+  endTime               String          @map("end_time")
+  isAvailable           Boolean         @default(true) @map("is_available")
+  reason                String?
+  createdAt             DateTime        @default(now()) @map("created_at")
+  
+  @@index([personId])
+  @@index([date])
+  @@map("availability_slots")
+}
+
+
+
+
