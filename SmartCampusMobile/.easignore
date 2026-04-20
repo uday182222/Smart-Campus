@@ -1,0 +1,9 @@
+build/
+*.log
+.DS_Store
+node_modules/.cache
+.expo/
+.expo-shared/
+dist/
+web-build/
+deployment-check-*.txt

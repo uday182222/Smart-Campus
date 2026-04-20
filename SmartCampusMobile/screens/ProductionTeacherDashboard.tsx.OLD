@@ -1,0 +1,447 @@
+import React, { useState, useEffect } from 'react';
+import { ScrollView, SafeAreaView, StatusBar, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { Box, Text } from '@gluestack-ui/themed';
+import { MotiView } from 'moti';
+import {
+  Users,
+  BookOpen,
+  ClipboardCheck,
+  MessageSquare,
+  TrendingUp,
+  Calendar,
+  FileText,
+  Bell,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  User,
+  MapPin,
+} from 'lucide-react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { AnimatedCard } from '../components/ui/AnimatedCard';
+import { StatCard } from '../components/ui/StatCard';
+import { GradientBox } from '../components/ui/GradientBox';
+import { AnimatedButton } from '../components/ui/AnimatedButton';
+import AWSDashboardService, { DashboardStats } from '../services/AWSDashboardService';
+
+const ProductionTeacherDashboard: React.FC = () => {
+  const { userData, logout } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      const data = await AWSDashboardService.getTeacherDashboard(userData?.userId || 'teacher_1');
+      setDashboardData(data);
+    } catch (error) {
+      console.error('❌ Error loading dashboard:', error);
+      Alert.alert('Error', 'Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      const data = await AWSDashboardService.getTeacherDashboard(userData?.userId || 'teacher_1', true);
+      setDashboardData(data);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const teacherInfo = {
+    name: 'Sarah Wilson',
+    subject: 'Mathematics',
+    employeeId: 'TCH2025001',
+    school: 'Lotus Public School',
+  };
+
+  // Loading state
+  if (loading || !dashboardData) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+        <Box flex={1} justifyContent="center" alignItems="center">
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text mt="$4" fontSize="$lg" color="$textLight600">
+            Loading dashboard...
+          </Text>
+        </Box>
+      </SafeAreaView>
+    );
+  }
+
+  const stats = [
+    {
+      icon: <Users size={24} color="#3B82F6" />,
+      title: 'Total Students',
+      value: String(dashboardData.quickStats.studentsTotal),
+      subtitle: `Across ${dashboardData.quickStats.classesTeaching} classes`,
+      color: '$primary400',
+    },
+    {
+      icon: <CheckCircle size={24} color="#10B981" />,
+      title: 'Attendance Today',
+      value: `${dashboardData.attendance.attendancePercentage}%`,
+      subtitle: `${dashboardData.attendance.todayPresent} present`,
+      color: '$success400',
+    },
+    {
+      icon: <FileText size={24} color="#F59E0B" />,
+      title: 'Pending Homework',
+      value: String(dashboardData.homework.pendingSubmissions),
+      subtitle: `${dashboardData.homework.overdueAssignments} overdue`,
+      color: '$warning400',
+    },
+    {
+      icon: <MessageSquare size={24} color="#1E3A8A" />,
+      title: 'Messages',
+      value: String(dashboardData.quickStats.messagesUnread),
+      subtitle: `${dashboardData.notifications.unreadCount} notifications`,
+      color: '$primary800',
+    },
+  ];
+
+  const todayClasses = dashboardData.timetable.todaySchedule
+    .filter(period => period.subject !== 'Break')
+    .map(period => ({
+      class: period.className,
+      subject: period.subject,
+      time: `${period.startTime} - ${period.endTime}`,
+      room: period.room,
+      students: 30, // Mock - would come from class data
+      status: dashboardData.timetable.currentPeriod?.period === period.period ? 'In Progress' : 'Upcoming',
+      attendance: 'N/A',
+      color: dashboardData.timetable.currentPeriod?.period === period.period ? '#3B82F6' : '#6B7280',
+    }));
+
+  const recentActivities = [
+    {
+      icon: <ClipboardCheck size={20} color="#10B981" />,
+      title: 'Attendance Marked',
+      description: 'Grade 5A - 30/32 students present',
+      time: '30 mins ago',
+      color: '$success400',
+    },
+    {
+      icon: <FileText size={20} color="#F59E0B" />,
+      title: 'Homework Assigned',
+      description: 'Algebra Problems - Due Tomorrow',
+      time: '2 hours ago',
+      color: '$warning400',
+    },
+    {
+      icon: <MessageSquare size={20} color="#3B82F6" />,
+      title: 'Parent Message',
+      description: 'New message from Mrs. Johnson',
+      time: '3 hours ago',
+      color: '$primary400',
+    },
+  ];
+
+  const quickActions = [
+    {
+      title: 'Mark Attendance',
+      icon: <ClipboardCheck size={24} color="#3B82F6" />,
+      color: '#3B82F6',
+      route: 'Attendance',
+    },
+    {
+      title: 'Assign Homework',
+      icon: <BookOpen size={24} color="#10B981" />,
+      color: '#10B981',
+      route: 'Homework',
+    },
+    {
+      title: 'View Schedule',
+      icon: <Calendar size={24} color="#F59E0B" />,
+      color: '#F59E0B',
+      route: 'Calendar',
+    },
+    {
+      title: 'Messages',
+      icon: <MessageSquare size={24} color="#1E3A8A" />,
+      color: '#1E3A8A',
+      route: 'Communication',
+    },
+    {
+      title: 'Grade Assignments',
+      icon: <FileText size={24} color="#EF4444" />,
+      color: '#EF4444',
+      route: 'Homework',
+    },
+    {
+      title: 'Class Reports',
+      icon: <TrendingUp size={24} color="#3B82F6" />,
+      color: '#3B82F6',
+      route: 'Analytics',
+    },
+  ];
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+
+      {/* Header */}
+      <GradientBox colors={['#3B82F6', '#1E3A8A']} style={{ height: 'auto' }}>
+        <MotiView
+          from={{ opacity: 0, translateY: -20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 600 }}
+        >
+          <Box padding="$5" paddingTop="$3">
+            <Box flexDirection="row" alignItems="center" justifyContent="space-between">
+              <Box flexDirection="row" alignItems="center" flex={1}>
+                <Box
+                  width={70}
+                  height={70}
+                  borderRadius="$full"
+                  bg="rgba(255, 255, 255, 0.2)"
+                  justifyContent="center"
+                  alignItems="center"
+                  marginRight="$4"
+                  borderWidth={3}
+                  borderColor="rgba(255, 255, 255, 0.3)"
+                >
+                  <User size={36} color="#FFFFFF" strokeWidth={2} />
+                </Box>
+                <Box flex={1}>
+                  <Text fontSize="$sm" color="rgba(255, 255, 255, 0.9)">
+                    Good Morning,
+                  </Text>
+                  <Text
+                    fontSize="$2xl"
+                    fontWeight="$bold"
+                    color="$white"
+                    marginTop="$1"
+                  >
+                    {teacherInfo.name}
+                  </Text>
+                  <Text fontSize="$sm" color="rgba(255, 255, 255, 0.8)" marginTop="$1">
+                    {teacherInfo.subject} Teacher
+                  </Text>
+                </Box>
+              </Box>
+              <TouchableOpacity onPress={() => {}}>
+                <Box
+                  width={40}
+                  height={40}
+                  borderRadius="$full"
+                  bg="rgba(255, 255, 255, 0.2)"
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Bell size={20} color="#ffffff" />
+                  <Box
+                    position="absolute"
+                    top={8}
+                    right={8}
+                    width={10}
+                    height={10}
+                    borderRadius="$full"
+                    bg="$error400"
+                  />
+                </Box>
+              </TouchableOpacity>
+            </Box>
+          </Box>
+        </MotiView>
+      </GradientBox>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Stats Grid */}
+        <Box marginBottom="$6">
+          <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+            {stats.map((stat, index) => (
+              <Box key={index} width="48%" marginBottom="$4">
+                <StatCard
+                  icon={stat.icon}
+                  title={stat.title}
+                  value={stat.value}
+                  subtitle={stat.subtitle}
+                  color={stat.color}
+                  delay={index * 100}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Today's Classes */}
+        <MotiView
+          from={{ opacity: 0, translateX: -20 }}
+          animate={{ opacity: 1, translateX: 0 }}
+          transition={{ type: 'timing', duration: 600, delay: 400 }}
+        >
+          <Text fontSize="$xl" fontWeight="$bold" color="$textDark" marginBottom="$4">
+            Today's Classes
+          </Text>
+          {todayClasses.map((classItem, index) => (
+            <AnimatedCard key={index} variant="elevated" padding="$4" delay={500 + index * 100}>
+              <Box>
+                <Box flexDirection="row" justifyContent="space-between" alignItems="center" marginBottom="$3">
+                  <Box>
+                    <Text fontSize="$lg" fontWeight="$bold" color="$textDark">
+                      {classItem.class}
+                    </Text>
+                    <Text fontSize="$sm" color="$textMuted" marginTop="$1">
+                      {classItem.subject}
+                    </Text>
+                  </Box>
+                  <Box
+                    bg={`${classItem.color}20`}
+                    paddingHorizontal="$3"
+                    paddingVertical="$2"
+                    borderRadius="$lg"
+                  >
+                    <Text fontSize="$xs" fontWeight="$semibold" color={classItem.color}>
+                      {classItem.status}
+                    </Text>
+                  </Box>
+                </Box>
+                <Box
+                  flexDirection="row"
+                  justifyContent="space-between"
+                  paddingTop="$3"
+                  borderTopWidth={1}
+                  borderTopColor="$backgroundLight200"
+                >
+                  <Box flexDirection="row" alignItems="center">
+                    <Clock size={14} color="#9CA3AF" />
+                    <Text fontSize="$xs" color="$textMuted" marginLeft="$1">
+                      {classItem.time}
+                    </Text>
+                  </Box>
+                  <Box flexDirection="row" alignItems="center">
+                    <MapPin size={12} color="#9CA3AF" />
+                    <Text fontSize="$xs" color="$textMuted" marginLeft="$1">
+                      {classItem.room}
+                    </Text>
+                  </Box>
+                  <Box flexDirection="row" alignItems="center">
+                    <Users size={12} color="#9CA3AF" />
+                    <Text fontSize="$xs" color="$textMuted" marginLeft="$1">
+                      {classItem.students}
+                    </Text>
+                  </Box>
+                  <Box flexDirection="row" alignItems="center">
+                    <CheckCircle size={12} color="#10B981" />
+                    <Text fontSize="$xs" color="$success600" fontWeight="$semibold" marginLeft="$1">
+                      {classItem.attendance}
+                    </Text>
+                  </Box>
+                </Box>
+              </Box>
+            </AnimatedCard>
+          ))}
+        </MotiView>
+
+        {/* Recent Activities */}
+        <MotiView
+          from={{ opacity: 0, translateX: 20 }}
+          animate={{ opacity: 1, translateX: 0 }}
+          transition={{ type: 'timing', duration: 600, delay: 800 }}
+        >
+          <Text
+            fontSize="$xl"
+            fontWeight="$bold"
+            color="$textDark"
+            marginTop="$6"
+            marginBottom="$4"
+          >
+            Recent Activities
+          </Text>
+          {recentActivities.map((activity, index) => (
+            <AnimatedCard key={index} variant="elevated" padding="$4" delay={900 + index * 100}>
+              <Box flexDirection="row" alignItems="center">
+                <Box
+                  width={40}
+                  height={40}
+                  borderRadius="$full"
+                  bg={`${activity.color}20`}
+                  justifyContent="center"
+                  alignItems="center"
+                  marginRight="$3"
+                >
+                  {activity.icon}
+                </Box>
+                <Box flex={1}>
+                  <Text fontSize="$md" fontWeight="$bold" color="$textDark">
+                    {activity.title}
+                  </Text>
+                  <Text fontSize="$sm" color="$textMuted" marginTop="$1">
+                    {activity.description}
+                  </Text>
+                  <Text fontSize="$xs" color="$textMuted50" marginTop="$1">
+                    {activity.time}
+                  </Text>
+                </Box>
+              </Box>
+            </AnimatedCard>
+          ))}
+        </MotiView>
+
+        {/* Quick Actions */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'timing', duration: 600, delay: 1200 }}
+        >
+          <Text
+            fontSize="$xl"
+            fontWeight="$bold"
+            color="$textDark"
+            marginTop="$6"
+            marginBottom="$4"
+          >
+            Quick Actions
+          </Text>
+          <Box flexDirection="row" flexWrap="wrap" justifyContent="space-between">
+            {quickActions.map((action, index) => (
+              <AnimatedCard
+                key={index}
+                variant="elevated"
+                padding="$4"
+                delay={1300 + index * 80}
+                style={{ width: '48%', marginBottom: 16 }}
+                onPress={() => console.log(action.title)}
+              >
+                <Box
+                  width={48}
+                  height={48}
+                  borderRadius="$lg"
+                  bg={`${action.color}20`}
+                  justifyContent="center"
+                  alignItems="center"
+                  marginBottom="$3"
+                >
+                  {action.icon}
+                </Box>
+                <Text fontSize="$sm" fontWeight="$bold" color="$textDark">
+                  {action.title}
+                </Text>
+              </AnimatedCard>
+            ))}
+          </Box>
+        </MotiView>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default ProductionTeacherDashboard;
+

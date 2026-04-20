@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Smart Campus - Cognito User Pool with 5 User Groups'
+
+Resources:
+  # Cognito User Pool
+  SmartCampusUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: SmartCampusUserPool
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: custom:role
+          AttributeDataType: String
+          Mutable: true
+        - Name: custom:schoolId
+          AttributeDataType: String
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: OFF
+      EmailVerificationMessage: 'Your Smart Campus verification code is {####}'
+      EmailVerificationSubject: 'Smart Campus Verification Code'
+      SmsVerificationMessage: 'Your Smart Campus code is {####}'
+      UserPoolTags:
+        Application: SmartCampus
+        Environment: production
+  
+  # User Pool Client
+  SmartCampusUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref SmartCampusUserPool
+      ClientName: SmartCampusWebClient
+      GenerateSecret: false
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      ReadAttributes:
+        - email
+        - name
+        - custom:role
+        - custom:schoolId
+      WriteAttributes:
+        - email
+        - name
+  
+  # Identity Pool
+  SmartCampusIdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: SmartCampusIdentityPool
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref SmartCampusUserPoolClient
+          ProviderName: !GetAtt SmartCampusUserPool.ProviderName
+  
+  # User Groups
+  SuperAdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: SuperAdmin
+      Description: Super administrators with full system access
+      UserPoolId: !Ref SmartCampusUserPool
+      Precedence: 0
+  
+  SchoolAdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: SchoolAdmin
+      Description: School administrators with school-level access
+      UserPoolId: !Ref SmartCampusUserPool
+      Precedence: 1
+  
+  TeacherGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Teacher
+      Description: Teachers with classroom access
+      UserPoolId: !Ref SmartCampusUserPool
+      Precedence: 2
+  
+  ParentGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Parent
+      Description: Parents with student access
+      UserPoolId: !Ref SmartCampusUserPool
+      Precedence: 3
+  
+  StudentGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Student
+      Description: Students with personal access
+      UserPoolId: !Ref SmartCampusUserPool
+      Precedence: 4
+  
+  # IAM Roles for authenticated users
+  CognitoAuthRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud: !Ref SmartCampusIdentityPool
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+  
+  # Attach roles to identity pool
+  IdentityPoolRoleAttachment:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId: !Ref SmartCampusIdentityPool
+      Roles:
+        authenticated: !GetAtt CognitoAuthRole.Arn
+
+Outputs:
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref SmartCampusUserPool
+    Export:
+      Name: SmartCampus-UserPoolId
+  
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref SmartCampusUserPoolClient
+    Export:
+      Name: SmartCampus-UserPoolClientId
+  
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !Ref SmartCampusIdentityPool
+    Export:
+      Name: SmartCampus-IdentityPoolId
+  
+  UserPoolArn:
+    Description: Cognito User Pool ARN
+    Value: !GetAtt SmartCampusUserPool.Arn
+    Export:
+      Name: SmartCampus-UserPoolArn
+

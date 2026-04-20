@@ -1,0 +1,347 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Smart Campus - DynamoDB Tables for all app data'
+
+Resources:
+  # Schools Table
+  SchoolsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Schools
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: schoolId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: status-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+        - Key: Environment
+          Value: production
+
+  # Users Table
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Attendance Table
+  AttendanceTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Attendance
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: attendanceId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: attendanceId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-date-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: date
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Homework Table
+  HomeworkTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Homework
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: homeworkId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: dueDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: homeworkId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-dueDate-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: dueDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Fees Table
+  FeesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Fees
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: feeId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: studentId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: feeId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: studentId-index
+          KeySchema:
+            - AttributeName: studentId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Communications Table
+  CommunicationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Communications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: messageId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: messageId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-timestamp-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Notifications Table
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Notifications
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: notificationId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: notificationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: userId-timestamp-index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Transport Table
+  TransportTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Transport
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: transportId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: transportId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Gallery Table
+  GalleryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Gallery
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: galleryId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: uploadDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: galleryId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-uploadDate-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: uploadDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Calendar Table
+  CalendarTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Calendar
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: eventId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: eventDate
+          AttributeType: S
+      KeySchema:
+        - AttributeName: eventId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-eventDate-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: eventDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+  # Analytics Table
+  AnalyticsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmartCampus-Analytics
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: analyticsId
+          AttributeType: S
+        - AttributeName: schoolId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: analyticsId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: schoolId-timestamp-index
+          KeySchema:
+            - AttributeName: schoolId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+
+Outputs:
+  SchoolsTableName:
+    Description: Schools Table Name
+    Value: !Ref SchoolsTable
+    Export:
+      Name: SmartCampus-SchoolsTableName
+
+  UsersTableName:
+    Description: Users Table Name
+    Value: !Ref UsersTable
+    Export:
+      Name: SmartCampus-UsersTableName
+
+  AttendanceTableName:
+    Description: Attendance Table Name
+    Value: !Ref AttendanceTable
+    Export:
+      Name: SmartCampus-AttendanceTableName
+
+

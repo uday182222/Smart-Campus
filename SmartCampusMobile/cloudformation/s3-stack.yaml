@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Smart Campus - S3 Bucket for media storage'
+
+Resources:
+  # S3 Bucket for school logos and media
+  SmartCampusMediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: smartcampus-logos-2025
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3000
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+      Tags:
+        - Key: Application
+          Value: SmartCampus
+        - Key: Environment
+          Value: production
+
+  # Bucket Policy to allow public read access
+  SmartCampusMediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SmartCampusMediaBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action:
+              - s3:GetObject
+            Resource: !Sub '${SmartCampusMediaBucket.Arn}/*'
+
+Outputs:
+  BucketName:
+    Description: S3 Bucket Name
+    Value: !Ref SmartCampusMediaBucket
+    Export:
+      Name: SmartCampus-MediaBucketName
+
+  BucketArn:
+    Description: S3 Bucket ARN
+    Value: !GetAtt SmartCampusMediaBucket.Arn
+    Export:
+      Name: SmartCampus-MediaBucketArn
+
+  BucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt SmartCampusMediaBucket.DomainName
+    Export:
+      Name: SmartCampus-MediaBucketDomainName
+
+

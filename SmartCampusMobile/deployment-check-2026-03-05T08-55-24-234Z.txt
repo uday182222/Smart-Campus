@@ -1,0 +1,67 @@
+Smart Campus Mobile - Pre-Deployment Check Report
+============================================================
+Generated: 3/5/2026, 2:25:24 PM
+
+Total Checks: 51
+Passed: 39
+Failed: 3
+Warnings: 9
+
+============================================================
+
+PASSED:
+  ✅ EXPO_PUBLIC_API_URL: Set
+  ✅ Environment variables: All required variables set
+  ✅ Push notifications: EAS project ID set
+  ✅ App Icon: Present (0.02MB)
+  ✅ Adaptive Icon (Android): Present (0.02MB)
+  ✅ Splash Icon: Present (0.02MB)
+  ✅ Splash screen: Image configured
+  ✅ Splash screen: Background color set (#2196F3)
+  ✅ app.json: name = Smart Campus
+  ✅ app.json: slug = smart-campus
+  ✅ app.json: version = 1.0.0
+  ✅ app.json: orientation = portrait
+  ✅ app.json: icon = ./assets/icon.png
+  ✅ app.json: scheme = smartcampus
+  ✅ iOS: Bundle ID = com.smartcampus.app
+  ✅ Android: Package name = com.smartcampus.app
+  ✅ Privacy Policy URL: https://example.com/privacy
+  ✅ Terms of Service URL: https://example.com/terms
+  ✅ Dependency: expo (~49.0.0)
+  ✅ Dependency: react (18.2.0)
+  ✅ Dependency: react-native (0.72.10)
+  ✅ Dependency: axios (^1.13.2)
+  ✅ Dependency: @react-native-async-storage/async-storage (1.18.2)
+  ✅ Dependency: @react-navigation/native (^6.1.18)
+  ✅ Dependency: expo-notifications (~0.20.1)
+  ✅ Dependency: expo-location (~16.1.0)
+  ✅ Dependency: zustand (^5.0.9)
+  ✅ TypeScript: Configuration found
+  ✅ EAS Build: Configuration found
+  ✅ EAS Build: Production profile configured
+  ✅ App Icon: Found (21.86KB)
+  ✅ Android Adaptive Icon: Found (17.14KB)
+  ✅ Favicon: Found (1.43KB)
+  ✅ Source file: App.tsx
+  ✅ Source file: screens/ProductionTeacherDashboard.tsx
+  ✅ Source file: screens/ProductionParentDashboard.tsx
+  ✅ Source file: screens/ProductionAdminDashboard.tsx
+  ✅ Source file: services/apiClient.ts
+  ✅ Source file: contexts/AuthContext.tsx
+
+FAILED:
+  ❌ API connection: HTTP 404
+  ❌ API connection: HTTP 404
+  ❌ Google Maps API: Key format invalid (too short)
+
+WARNINGS:
+  ⚠️  EXPO_PUBLIC_SENTRY_DSN: Not set (optional)
+  ⚠️  EXPO_PUBLIC_ANALYTICS_ID: Not set (optional)
+  ⚠️  AWS Cognito: User Pool ID format looks unusual
+  ⚠️  AWS S3: Bucket name not configured (optional for mobile)
+  ⚠️  Push notifications: Plugin not found in app.json
+  ⚠️  Push notifications: iOS background mode not configured
+  ⚠️  Push notifications: Android google-services.json not set
+  ⚠️  iOS Screenshots Folder: Not found (optional)
+  ⚠️  Android Screenshots Folder: Not found (optional)

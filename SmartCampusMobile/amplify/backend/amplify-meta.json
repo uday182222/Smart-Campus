@@ -1,0 +1,15 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-smartcampus-dev-115b0-authRole",
+      "UnauthRoleArn": "arn:aws:iam::566792563684:role/amplify-smartcampus-dev-115b0-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::566792563684:role/amplify-smartcampus-dev-115b0-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-smartcampus-dev-115b0-deployment",
+      "UnauthRoleName": "amplify-smartcampus-dev-115b0-unauthRole",
+      "StackName": "amplify-smartcampus-dev-115b0",
+      "StackId": "arn:aws:cloudformation:us-east-1:566792563684:stack/amplify-smartcampus-dev-115b0/cd9e0700-a7cf-11f0-8aa3-0affcfcff881",
+      "AmplifyAppId": "d5gzuygzbnqe2"
+    }
+  }
+}

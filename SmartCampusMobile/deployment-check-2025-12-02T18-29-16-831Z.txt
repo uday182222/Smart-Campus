@@ -1,0 +1,73 @@
+Smart Campus Mobile - Pre-Deployment Check Report
+============================================================
+Generated: 12/2/2025, 11:59:16 PM
+
+Total Checks: 57
+Passed: 35
+Failed: 13
+Warnings: 9
+
+============================================================
+
+PASSED:
+  ✅ Push notifications: Plugin configured
+  ✅ App Icon: Present (0.02MB)
+  ✅ Adaptive Icon (Android): Present (0.02MB)
+  ✅ Splash Icon: Present (0.02MB)
+  ✅ Splash screen: Image configured
+  ✅ Splash screen: Background color set (#6366f1)
+  ✅ app.json: name = Smart Campus
+  ✅ app.json: slug = smart-campus
+  ✅ app.json: version = 1.0.0
+  ✅ app.json: orientation = portrait
+  ✅ app.json: icon = ./assets/icon.png
+  ✅ iOS: Bundle ID = com.smartcampus.app
+  ✅ Android: Package name = com.smartcampus.app
+  ✅ Android: 8 permissions configured
+  ✅ Dependency: expo (~49.0.0)
+  ✅ Dependency: react (18.2.0)
+  ✅ Dependency: react-native (0.72.6)
+  ✅ Dependency: axios (^1.13.2)
+  ✅ Dependency: @react-native-async-storage/async-storage (1.18.2)
+  ✅ Dependency: @react-navigation/native (^6.1.7)
+  ✅ Dependency: expo-notifications (~0.20.1)
+  ✅ Dependency: expo-location (~16.1.0)
+  ✅ Dependency: zustand (^5.0.9)
+  ✅ TypeScript: Configuration found
+  ✅ EAS Build: Configuration found
+  ✅ EAS Build: Production profile configured
+  ✅ App Icon: Found (21.86KB)
+  ✅ Android Adaptive Icon: Found (17.14KB)
+  ✅ Favicon: Found (1.43KB)
+  ✅ Source file: App.tsx
+  ✅ Source file: screens/ProductionTeacherDashboard.tsx
+  ✅ Source file: screens/ProductionParentDashboard.tsx
+  ✅ Source file: screens/ProductionAdminDashboard.tsx
+  ✅ Source file: services/apiClient.ts
+  ✅ Source file: contexts/AuthContext.tsx
+
+FAILED:
+  ❌ EXPO_PUBLIC_API_URL: Not set
+  ❌ EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: Not set
+  ❌ EXPO_PUBLIC_AWS_REGION: Not set
+  ❌ EXPO_PUBLIC_AWS_COGNITO_USER_POOL_ID: Not set
+  ❌ EXPO_PUBLIC_AWS_COGNITO_CLIENT_ID: Not set
+  ❌ Environment variables: Missing required variables
+  ❌ API connection: 
+  ❌ API connection: 
+  ❌ AWS Cognito: Configuration missing
+  ❌ Google Maps API: Key not set
+  ❌ app.json: scheme is not set
+  ❌ Privacy Policy URL: Not set in app.json
+  ❌ Terms of Service URL: Not set in app.json
+
+WARNINGS:
+  ⚠️  EXPO_PUBLIC_SENTRY_DSN: Not set (optional)
+  ⚠️  EXPO_PUBLIC_ANALYTICS_ID: Not set (optional)
+  ⚠️  AWS S3: Region not set, using default
+  ⚠️  AWS S3: Bucket name not configured (optional for mobile)
+  ⚠️  Push notifications: EAS project ID not set
+  ⚠️  Push notifications: iOS background mode not configured
+  ⚠️  Push notifications: Android google-services.json not set
+  ⚠️  iOS Screenshots Folder: Not found (optional)
+  ⚠️  Android Screenshots Folder: Not found (optional)
