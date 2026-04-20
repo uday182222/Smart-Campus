@@ -20,6 +20,7 @@ build/
 *.pem
 *.p12
 google-play-key.json
+SmartCampusMobile/setup-aws-resources.js
 
 # OS files
 .DS_Store
