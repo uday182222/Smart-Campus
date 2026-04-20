@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.udaytomar.smartcampus",
+      "package": "com.smartcampusapp.school",
       "versionCode": 1
     },
     "web": {
@@ -42,6 +42,11 @@
       ],
       "@react-native-community/datetimepicker"
     ],
-    "scheme": "smartcampus"
+    "scheme": "smartcampus",
+    "extra": {
+      "eas": {
+        "projectId": "a87eb2c8-7d98-43cf-a7f4-ec2cdb694aad"
+      }
+    }
   }
 }

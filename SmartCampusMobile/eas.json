@@ -18,7 +18,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://smart-campus-api.railway.app/api/v1"
+        "EXPO_PUBLIC_API_URL": "http://13.50.245.239:5000/api/v1"
       }
     }
   },
