@@ -563,5 +563,51 @@ export const usersController = {
       }
     }
   },
+
+  /**
+   * PATCH /api/users/:userId/push-token
+   * Save Expo push token for the authenticated user
+   */
+  async updatePushToken(req: AuthRequest, res: Response) {
+    try {
+      const { userId } = req.params;
+      const currentUserId = req.user?.id;
+      const { expoPushToken, pushToken } = req.body as { expoPushToken?: string; pushToken?: string };
+
+      if (!currentUserId) {
+        throw new ForbiddenError('Authentication required');
+      }
+
+      if (userId !== currentUserId && req.user?.role !== 'SUPER_ADMIN') {
+        throw new ForbiddenError('You can only update your own push token');
+      }
+
+      const token = expoPushToken ?? pushToken;
+      if (!token || typeof token !== 'string') {
+        throw new ValidationError('expoPushToken or pushToken is required');
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { pushToken: token },
+        select: { id: true, pushToken: true },
+      });
+
+      logger.info(`Push token updated for user ${userId}`);
+
+      res.json({
+        success: true,
+        message: 'Push token saved',
+        data: { userId: updated.id, pushToken: updated.pushToken },
+      });
+    } catch (error) {
+      logger.error('Error updating push token:', error);
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ success: false, message: error.message });
+      } else {
+        res.status(500).json({ success: false, message: 'Internal server error' });
+      }
+    }
+  },
 };
 

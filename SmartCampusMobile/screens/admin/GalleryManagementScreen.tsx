@@ -19,11 +19,13 @@ import {
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Folder, Plus, Search, Globe, Users, Lock, Grid3X3, List, Image as ImageIcon, UploadCloud } from 'lucide-react-native';
+import { ChevronLeft, Folder, Plus, Search, Globe, Users, Lock, Grid3X3, List, Image as ImageIcon, UploadCloud } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { T } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 // Components
 import MediaUploadModal from '../../components/gallery/MediaUploadModal';
@@ -66,6 +68,7 @@ interface Album {
 }
 
 const GalleryManagementScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { userData } = useAuth();
 
@@ -227,34 +230,50 @@ const GalleryManagementScreen: React.FC = () => {
 
   const getVisibilityColor = (visibility: string) => {
     switch (visibility) {
-      case 'public': return '#2ECC71';
-      case 'class-specific': return '#3498DB';
-      case 'private': return '#E74C3C';
-      default: return '#95A5A6';
+      case 'public':
+        return T.success;
+      case 'class-specific':
+        return T.primary;
+      case 'private':
+        return T.danger;
+      default:
+        return T.textMuted;
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }}>Admin</Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Gallery Management</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (navigation.canGoBack()) navigation.goBack();
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
+            >
+              <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Gallery</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}>
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </TouchableOpacity>
-            <TouchableOpacity style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }} onPress={handleAlbumPress}>
-              <Folder size={20} color={T.textDark} strokeWidth={1.8} />
-            </TouchableOpacity>
-            <TouchableOpacity style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }} onPress={handleUploadPress}>
-              <Plus size={20} color={T.textWhite} strokeWidth={1.8} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
+            onPress={handleAlbumPress}
+          >
+            <Folder size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }}>
+          {filteredMedia.length} {filteredMedia.length === 1 ? 'item' : 'items'}
+        </Text>
       </View>
 
       {/* Search and Filters */}
@@ -422,7 +441,7 @@ const GalleryManagementScreen: React.FC = () => {
             tintColor={T.primary}
           />
         }
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 160 }}
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -479,6 +498,31 @@ const GalleryManagementScreen: React.FC = () => {
         albums={albums}
         onAlbumUpdate={(updatedAlbums) => setAlbums(updatedAlbums)}
       />
+
+      <TouchableOpacity
+        onPress={handleUploadPress}
+        style={{
+          position: 'absolute',
+          bottom: 100,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: T.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999,
+          elevation: 10,
+          shadowColor: T.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        }}
+      >
+        <Plus size={24} color={T.textWhite} strokeWidth={1.8} />
+      </TouchableOpacity>
+
+      <AdminFloatingNav navigation={navigation} activeTab="Gallery" />
     </View>
   );
 };

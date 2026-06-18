@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import prisma from '../config/database';
 import { logger } from '../utils/logger';
 import { AuthRequest } from '../middleware/auth';
@@ -38,7 +38,7 @@ export const bushelperController = {
     }
   },
 
-  async getRouteDetail(req: AuthRequest, res: Response) {
+  async getRouteDetail(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const helperId = req.user!.id;
       const { routeId } = req.params;
@@ -69,8 +69,8 @@ export const bushelperController = {
       });
     } catch (error) {
       logger.error('getRouteDetail error:', error);
-      if (error instanceof AppError) throw error;
-      return res.status(500).json({ success: false, message: 'Internal server error' });
+      if (error instanceof AppError) return next(error);
+      return next(error);
     }
   },
 

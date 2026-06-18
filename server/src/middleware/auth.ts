@@ -96,6 +96,18 @@ export const authMiddleware = {
     next();
   },
 
+  requireRole: (...roles: string[]) => {
+    return (req: AuthRequest, _res: Response, next: NextFunction) => {
+      if (!req.user) {
+        return next(new UnauthorizedError('Authentication required'));
+      }
+      if (!roles.includes(req.user.role)) {
+        return next(new ForbiddenError('Insufficient permissions'));
+      }
+      next();
+    };
+  },
+
   requireParent: (req: AuthRequest, _res: Response, next: NextFunction) => {
     const parentRoles = ['PARENT', 'ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'];
     if (!req.user || !parentRoles.includes(req.user.role)) {

@@ -16,7 +16,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Download, AlertTriangle, Calendar as CalendarIcon } from 'lucide-react-native';
+import { ChevronLeft, Download, AlertTriangle, Calendar as CalendarIcon } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Agenda, Calendar } from 'react-native-calendars';
 
 // Components
@@ -42,6 +43,7 @@ interface TimeSlot {
 }
 
 const AppointmentCalendarScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([]);
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
@@ -114,11 +116,16 @@ const AppointmentCalendarScreen: React.FC = () => {
 
   const getAppointmentColor = (assignedTo: string): string => {
     switch (assignedTo) {
-      case 'principal': return '#9B59B6';
-      case 'teacher': return '#3498DB';
-      case 'counselor': return '#2ECC71';
-      case 'admin': return '#E67E22';
-      default: return '#95A5A6';
+      case 'principal':
+        return T.warning;
+      case 'teacher':
+        return T.primary;
+      case 'counselor':
+        return T.success;
+      case 'admin':
+        return T.warning;
+      default:
+        return T.textMuted;
     }
   };
 
@@ -147,7 +154,7 @@ const AppointmentCalendarScreen: React.FC = () => {
     marked[selectedDate] = {
       ...marked[selectedDate],
       selected: true,
-      selectedColor: '#4ECDC4',
+      selectedColor: T.primary,
     };
 
     return marked;
@@ -399,19 +406,19 @@ const AppointmentCalendarScreen: React.FC = () => {
           onDayPress={(day) => setSelectedDate(day.dateString)}
           markedDates={getMarkedDates()}
           theme={{
-            backgroundColor: '#ffffff',
-            calendarBackground: '#ffffff',
-            textSectionTitleColor: '#b6c1cd',
-            selectedDayBackgroundColor: '#4ECDC4',
-            selectedDayTextColor: '#ffffff',
-            todayTextColor: '#4ECDC4',
-            dayTextColor: '#2d4150',
-            textDisabledColor: '#d9e1e8',
-            dotColor: '#4ECDC4',
-            selectedDotColor: '#ffffff',
-            arrowColor: '#4ECDC4',
-            monthTextColor: '#2d4150',
-            indicatorColor: '#4ECDC4',
+            backgroundColor: T.card,
+            calendarBackground: T.card,
+            textSectionTitleColor: T.textPlaceholder,
+            selectedDayBackgroundColor: T.primary,
+            selectedDayTextColor: T.textWhite,
+            todayTextColor: T.primary,
+            dayTextColor: T.textDark,
+            textDisabledColor: T.inputBorder,
+            dotColor: T.primary,
+            selectedDotColor: T.textWhite,
+            arrowColor: T.primary,
+            monthTextColor: T.textDark,
+            indicatorColor: T.primary,
             textDayFontSize: 16,
             textMonthFontSize: 16,
             textDayHeaderFontSize: 13,
@@ -459,25 +466,37 @@ const AppointmentCalendarScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }}>Admin</Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Appointment Calendar</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}>
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <TouchableOpacity
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={handleExportSchedule}
+              onPress={() => {
+                if (navigation.canGoBack()) navigation.goBack();
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
             >
-              <Download size={20} color={T.textWhite} strokeWidth={1.8} />
+              <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Calendar</Text>
           </View>
+          <TouchableOpacity
+            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
+            onPress={handleExportSchedule}
+          >
+            <Download size={20} color={T.textWhite} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }}>
+          {appointments.length} scheduled · {viewMode} view
+        </Text>
       </View>
 
       {/* View Mode Selector */}
@@ -506,15 +525,15 @@ const AppointmentCalendarScreen: React.FC = () => {
 
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#9B59B6' }]} />
+            <View style={[styles.legendDot, { backgroundColor: T.warning }]} />
             <Text style={styles.legendText}>Principal</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#3498DB' }]} />
+            <View style={[styles.legendDot, { backgroundColor: T.primary }]} />
             <Text style={styles.legendText}>Teacher</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#2ECC71' }]} />
+            <View style={[styles.legendDot, { backgroundColor: T.success }]} />
             <Text style={styles.legendText}>Counselor</Text>
           </View>
         </View>

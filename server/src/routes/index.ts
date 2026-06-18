@@ -27,6 +27,7 @@ import superadminRoutes from './superadmin.routes';
 import teacherRoutes from './teacher.routes';
 import bushelperRoutes from './bushelper.routes';
 import eventsRoutes from './events.routes';
+import groupsRoutes from './groups.routes';
 
 const router = Router();
 
@@ -87,6 +88,7 @@ router.use('/remarks', remarksRoutes);
 router.use('/registration', registrationRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/teacher', teacherRoutes);
+router.use('/groups', groupsRoutes);
 router.use('/bushelper', bushelperRoutes);
 router.use('/events', eventsRoutes);
 

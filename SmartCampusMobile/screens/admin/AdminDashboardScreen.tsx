@@ -5,16 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Dimensions,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import {
   Bell,
   User,
@@ -25,11 +17,14 @@ import {
   Bus,
   Megaphone,
   School,
-  BarChart3,
   Info,
   AlertTriangle,
   FileText,
   ArrowRight,
+  CalendarDays,
+  LayoutGrid,
+  Image as ImageIcon,
+  Building2,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -63,9 +58,8 @@ interface Activity {
 interface QuickAction {
   id: string;
   title: string;
-  icon: string;
-  color: string;
   screen: string;
+  Icon: LucideIcon;
   onPress: () => void;
 }
 
@@ -127,16 +121,16 @@ const AdminDashboardScreen: React.FC = () => {
   };
 
   const quickActions: QuickAction[] = [
-    { id: 'attendance', title: 'Attendance', icon: 'check-circle', color: '#2ECC71', screen: 'AttendanceReport', onPress: () => safeNav('AttendanceReport') },
-    { id: 'fees', title: 'Fees', icon: 'payment', color: '#3498DB', screen: 'FeeReport', onPress: () => safeNav('FeeReport') },
-    { id: 'transport', title: 'Transport', icon: 'directions-bus', color: '#9B59B6', screen: 'TransportManagement', onPress: () => safeNav('TransportManagement') },
-    { id: 'communications', title: 'Announcements', icon: 'notifications', color: '#E67E22', screen: 'Announcements', onPress: () => safeNav('Announcements') },
-    { id: 'events', title: 'Events', icon: 'school', color: '#E74C3C', screen: 'Events', onPress: () => safeNav('Events') },
-    { id: 'users', title: 'Users', icon: 'account', color: '#34495E', screen: 'UserManagement', onPress: () => safeNav('UserManagement') },
-    { id: 'classes', title: 'Classes', icon: 'grid', color: '#34495E', screen: 'ClassManagement', onPress: () => safeNav('ClassManagement') },
-    { id: 'pending', title: 'Pending Requests', icon: 'alert', color: '#34495E', screen: 'PendingRequests', onPress: () => safeNav('PendingRequests') },
-    { id: 'gallery', title: 'Gallery', icon: 'image', color: '#34495E', screen: 'GalleryManagement', onPress: () => safeNav('GalleryManagement') },
-    { id: 'school', title: 'School Profile', icon: 'info', color: '#34495E', screen: 'SchoolProfile', onPress: () => safeNav('SchoolProfile') },
+    { id: 'attendance', title: 'Attendance', screen: 'AttendanceReport', Icon: CheckCircle, onPress: () => safeNav('AttendanceReport') },
+    { id: 'fees', title: 'Fees', screen: 'FeeReport', Icon: CreditCard, onPress: () => safeNav('FeeReport') },
+    { id: 'transport', title: 'Transport', screen: 'TransportManagement', Icon: Bus, onPress: () => safeNav('TransportManagement') },
+    { id: 'communications', title: 'Announcements', screen: 'Announcements', Icon: Megaphone, onPress: () => safeNav('Announcements') },
+    { id: 'events', title: 'Events', screen: 'Events', Icon: CalendarDays, onPress: () => safeNav('Events') },
+    { id: 'users', title: 'Users', screen: 'UserManagement', Icon: Users, onPress: () => safeNav('UserManagement') },
+    { id: 'classes', title: 'Classes', screen: 'ClassManagement', Icon: LayoutGrid, onPress: () => safeNav('ClassManagement') },
+    { id: 'pending', title: 'Pending Requests', screen: 'PendingRequests', Icon: AlertTriangle, onPress: () => safeNav('PendingRequests') },
+    { id: 'gallery', title: 'Gallery', screen: 'GalleryManagement', Icon: ImageIcon, onPress: () => safeNav('GalleryManagement') },
+    { id: 'school', title: 'School Profile', screen: 'SchoolProfile', Icon: Building2, onPress: () => safeNav('SchoolProfile') },
   ];
 
   const visibleActions = quickActions.filter((a) => canAccess((userData as any)?.role ?? '', a.screen));
@@ -182,22 +176,22 @@ const AdminDashboardScreen: React.FC = () => {
     {
       name: 'Primary',
       population: 45,
-      color: '#4ECDC4',
-      legendFontColor: '#7F7F7F',
+      color: T.success,
+      legendFontColor: T.textMuted,
       legendFontSize: 12,
     },
     {
       name: 'Middle',
       population: 30,
-      color: '#3498DB',
-      legendFontColor: '#7F7F7F',
+      color: T.primary,
+      legendFontColor: T.textMuted,
       legendFontSize: 12,
     },
     {
       name: 'Secondary',
       population: 25,
-      color: '#9B59B6',
-      legendFontColor: '#7F7F7F',
+      color: T.warning,
+      legendFontColor: T.textMuted,
       legendFontSize: 12,
     },
   ];
@@ -214,33 +208,90 @@ const AdminDashboardScreen: React.FC = () => {
     return `${days}d ago`;
   };
 
-  const adminInitial = 'A';
+  const adminName = userData?.name ?? 'Administrator';
+  const roleLabel = userData?.role === 'PRINCIPAL' ? 'Principal' : 'School Admin';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning,' : hour < 17 ? 'Good Afternoon,' : 'Good Evening,';
+  const initials =
+    adminName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
 
-  const getActivityIcon = (type: string) => {
+  const renderActivityIcon = (type: string) => {
     switch (type) {
-      case 'attendance': return 'check-circle';
-      case 'fee': return 'payment';
-      case 'communication': return 'notifications';
-      case 'transport': return 'directions-bus';
-      case 'exam': return 'school';
-      default: return 'info';
-    }
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'attendance': return '#2ECC71';
-      case 'fee': return '#3498DB';
-      case 'communication': return '#E67E22';
-      case 'transport': return '#9B59B6';
-      case 'exam': return '#E74C3C';
-      default: return '#95A5A6';
+      case 'attendance':
+        return <CheckCircle size={20} color={T.primary} strokeWidth={1.8} />;
+      case 'fee':
+        return <CreditCard size={20} color={T.primary} strokeWidth={1.8} />;
+      case 'communication':
+        return <Megaphone size={20} color={T.primary} strokeWidth={1.8} />;
+      case 'transport':
+        return <Bus size={20} color={T.primary} strokeWidth={1.8} />;
+      case 'exam':
+        return <School size={20} color={T.primary} strokeWidth={1.8} />;
+      default:
+        return <Info size={20} color={T.primary} strokeWidth={1.8} />;
     }
   };
 
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: T.bg }]}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: T.card,
+                borderRadius: T.radius.full,
+                paddingVertical: 6,
+                paddingLeft: 6,
+                paddingRight: 16,
+                ...T.shadowSm,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: T.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: T.textWhite }}>{initials}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 10, color: T.textPlaceholder, fontWeight: '500' }}>{greeting}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }}>{adminName}</Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
+            >
+              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
+            </View>
+          </View>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: T.textDark, marginTop: 16 }} numberOfLines={1}>
+            {theme.schoolName || 'School'}
+          </Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{roleLabel}</Text>
+        </View>
         <Text style={[styles.loadingText, { color: T.textMuted }]}>Loading dashboard...</Text>
       </View>
     );
@@ -259,42 +310,62 @@ const AdminDashboardScreen: React.FC = () => {
           />
         }
       >
-        {/* Header (flat) */}
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View>
-              <Text style={{ ...T.font.appTitle, color: T.textDark }}>Admin</Text>
-              <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Dashboard</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-                onPress={() => {
-                  try {
-                    navigation.navigate('Notifications');
-                  } catch (_e) {}
+        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                try {
+                  navigation.navigate('Profile');
+                } catch (_e) {}
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: T.card,
+                borderRadius: T.radius.full,
+                paddingVertical: 6,
+                paddingLeft: 6,
+                paddingRight: 16,
+                ...T.shadowSm,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: T.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-                onPress={() => {
-                  try {
-                    navigation.navigate('AdminProfile');
-                  } catch (_e) {}
-                }}
-              >
-                {theme.logoUrl ? (
-                  <Image source={{ uri: theme.logoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} resizeMode="cover" />
-                ) : (
-                  <Text style={{ color: T.textWhite, fontWeight: '900' }}>{adminInitial}</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: T.textWhite }}>{initials}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 10, color: T.textPlaceholder, fontWeight: '500' }}>{greeting}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }} numberOfLines={1}>
+                  {adminName}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
+              onPress={() => {
+                try {
+                  navigation.navigate('Notifications');
+                } catch (_e) {}
+              }}
+            >
+              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
+            </TouchableOpacity>
           </View>
+          <Text style={{ fontSize: 26, fontWeight: '900', color: T.textDark, marginTop: 16 }} numberOfLines={2}>
+            {theme.schoolName || 'School'}
+          </Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{roleLabel}</Text>
         </View>
 
         <View style={{ paddingHorizontal: T.px, paddingTop: 16 }}>
@@ -337,7 +408,9 @@ const AdminDashboardScreen: React.FC = () => {
         <View style={styles.quickActionsContainer}>
           <Text style={[styles.sectionTitle, { color: T.textDark }]}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            {visibleActions.map((action) => (
+            {visibleActions.map((action) => {
+              const ActionIcon = action.Icon;
+              return (
               <TouchableOpacity
                 key={action.id}
                 style={styles.quickActionCard}
@@ -345,16 +418,12 @@ const AdminDashboardScreen: React.FC = () => {
                 activeOpacity={0.85}
               >
                 <View style={styles.quickActionIcon}>
-                  {action.id === 'attendance' ? <CheckCircle size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                  {action.id === 'fees' ? <CreditCard size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                  {action.id === 'transport' ? <Bus size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                  {action.id === 'communications' ? <Megaphone size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                  {action.id === 'exams' ? <School size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                  {action.id === 'reports' ? <BarChart3 size={20} color={T.primary} strokeWidth={1.8} /> : null}
+                  <ActionIcon size={20} color={T.primary} strokeWidth={1.8} />
                 </View>
                 <Text style={[styles.quickActionText, { color: T.textDark }]}>{action.title}</Text>
               </TouchableOpacity>
-            ))}
+            );
+            })}
           </View>
         </View>
 
@@ -408,14 +477,7 @@ const AdminDashboardScreen: React.FC = () => {
           <Text style={[styles.sectionTitle, { color: T.textDark }]}>Recent Activities</Text>
           {stats?.recentActivities.map((activity) => (
             <View key={activity.id} style={styles.activityCard}>
-              <View style={styles.activityIcon}>
-                {getActivityIcon(activity.type) === 'check-circle' ? <CheckCircle size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                {getActivityIcon(activity.type) === 'payment' ? <CreditCard size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                {getActivityIcon(activity.type) === 'notifications' ? <Bell size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                {getActivityIcon(activity.type) === 'directions-bus' ? <Bus size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                {getActivityIcon(activity.type) === 'school' ? <School size={20} color={T.primary} strokeWidth={1.8} /> : null}
-                {getActivityIcon(activity.type) === 'info' ? <Info size={20} color={T.primary} strokeWidth={1.8} /> : null}
-              </View>
+              <View style={styles.activityIcon}>{renderActivityIcon(activity.type)}</View>
               <View style={styles.activityContent}>
                 <Text style={[styles.activityMessage, { color: T.textDark }]}>{activity.message}</Text>
                 <View style={styles.activityMeta}>
@@ -482,8 +544,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '800',
     marginBottom: 16,
   },
   metricsContainer: {
@@ -514,7 +576,7 @@ const styles = StyleSheet.create({
   },
   metricNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '900',
     marginBottom: 4,
   },
   metricLabel: {
@@ -564,7 +626,7 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     marginBottom: 12,
   },
   chart: {

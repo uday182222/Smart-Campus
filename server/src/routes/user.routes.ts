@@ -13,6 +13,9 @@ router.post('/', usersController.createUser);
 // PUT /api/users/:id - Update user
 router.put('/:id', usersController.updateUser);
 
+// PATCH /api/users/:userId/push-token - Save Expo push token
+router.patch('/:userId/push-token', usersController.updatePushToken);
+
 // DELETE /api/users/:id - Deactivate user
 router.delete('/:id', usersController.deleteUser);
 

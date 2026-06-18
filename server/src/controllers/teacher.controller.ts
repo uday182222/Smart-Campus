@@ -227,6 +227,78 @@ export const teacherController = {
   },
 
   /**
+   * GET /teacher/students-for-messaging
+   * All students across teacher's classes with parent info
+   */
+  async getStudentsForMessaging(req: AuthRequest, res: Response) {
+    try {
+      const teacherId = req.user?.id;
+      const schoolId = req.user?.schoolId;
+      if (!teacherId || !schoolId) throw new ForbiddenError('Authentication required');
+
+      const teacherClasses = await prisma.teacherClass.findMany({
+        where: { teacherId },
+        include: { class: { select: { id: true, name: true, section: true } } },
+      });
+      const classIds = teacherClasses.map((tc) => tc.classId);
+      if (classIds.length === 0) return res.json({ success: true, data: [] });
+
+      const classNameById = new Map(
+        teacherClasses.map((tc) => [
+          tc.classId,
+          `${tc.class.name}${tc.class.section ? ` ${tc.class.section}` : ''}`,
+        ])
+      );
+
+      const allSchoolStudents = await prisma.user.findMany({
+        where: { role: 'STUDENT', schoolId },
+        select: { id: true, name: true, email: true, metadata: true },
+      });
+      const students = allSchoolStudents.filter((s) => {
+        const meta = s.metadata as any;
+        return meta?.classId && classIds.includes(meta.classId);
+      });
+      if (students.length === 0) return res.json({ success: true, data: [] });
+
+      const parentLinks = await prisma.parentStudent.findMany({
+        where: { studentId: { in: students.map((s) => s.id) } },
+        include: {
+          parent: { select: { id: true, name: true } },
+        },
+        orderBy: { isPrimary: 'desc' },
+      });
+      const primaryParentByStudent = new Map<string, { id: string; name: string }>();
+      for (const link of parentLinks) {
+        if (!primaryParentByStudent.has(link.studentId)) {
+          primaryParentByStudent.set(link.studentId, { id: link.parent.id, name: link.parent.name });
+        }
+      }
+
+      const list = students.map((s) => {
+        const meta = (s.metadata as any) || {};
+        const classId = meta.classId as string;
+        const parent = primaryParentByStudent.get(s.id);
+        return {
+          id: s.id,
+          userId: s.id,
+          name: s.name,
+          email: s.email,
+          classId,
+          className: classNameById.get(classId) ?? 'Unknown Class',
+          parentId: parent?.id ?? null,
+          parentName: parent?.name ?? null,
+        };
+      });
+
+      return res.json({ success: true, data: list });
+    } catch (error) {
+      logger.error('Teacher students-for-messaging error:', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to load students', 500);
+    }
+  },
+
+  /**
    * GET /teacher/parents
    * Parents for students in teacher's assigned classes
    */
@@ -415,6 +487,7 @@ export const teacherController = {
   async sendMessage(req: AuthRequest, res: Response) {
     try {
       const teacherId = req.user?.id;
+      const schoolId = req.user?.schoolId;
       const { toUserId, message } = req.body as { toUserId: string; message: string };
       if (!teacherId) throw new ForbiddenError('Authentication required');
       if (!toUserId || !message?.trim()) throw new ValidationError('toUserId and message are required');
@@ -424,24 +497,67 @@ export const teacherController = {
         select: { name: true, role: true },
       });
       const toUser = await prisma.user.findFirst({
-        where: { id: toUserId },
+        where: { id: toUserId, schoolId: schoolId ?? undefined },
       });
       if (!toUser) throw new NotFoundError('Recipient not found');
 
-      await prisma.notification.create({
-        data: {
-          userId: toUserId,
-          category: 'message',
-          title: `Message from ${teacher?.name ?? 'Teacher'}`,
-          body: message.trim(),
+      const messageData = {
+        fromUserId: teacherId,
+        fromName: teacher?.name ?? 'Teacher',
+        fromRole: teacher?.role ?? 'TEACHER',
+      };
+
+      const createMessageNotification = async (userId: string) => {
+        await prisma.notification.create({
           data: {
-            fromUserId: teacherId,
-            fromName: teacher?.name ?? 'Teacher',
-            fromRole: teacher?.role ?? 'TEACHER',
-          } as any,
-          channels: ['in_app'] as any,
-        },
-      });
+            userId,
+            category: 'message',
+            title: `Message from ${teacher?.name ?? 'Teacher'}`,
+            body: message.trim(),
+            data: messageData as any,
+            channels: ['in_app'] as any,
+          },
+        });
+      };
+
+      if (toUser.role === 'STUDENT') {
+        const teacherClasses = await prisma.teacherClass.findMany({
+          where: { teacherId },
+          select: { classId: true },
+        });
+        const classIds = teacherClasses.map((tc) => tc.classId);
+        const studentMeta = (toUser.metadata as any) || {};
+        if (!studentMeta.classId || !classIds.includes(studentMeta.classId)) {
+          throw new ForbiddenError('Student is not in your assigned classes');
+        }
+
+        await createMessageNotification(toUserId);
+
+        const parentLinks = await prisma.parentStudent.findMany({
+          where: { studentId: toUserId },
+          select: { parentId: true },
+        });
+        for (const link of parentLinks) {
+          await prisma.notification.create({
+            data: {
+              userId: link.parentId,
+              category: 'message',
+              title: `Message about ${toUser.name}`,
+              body: message.trim(),
+              data: {
+                ...messageData,
+                studentId: toUserId,
+                studentName: toUser.name,
+              } as any,
+              channels: ['in_app'] as any,
+            },
+          });
+        }
+      } else if (toUser.role === 'PARENT') {
+        await createMessageNotification(toUserId);
+      } else {
+        throw new ValidationError('Messages can only be sent to parents or students');
+      }
 
       logger.info(`Teacher ${teacherId} sent message to ${toUserId}`);
       return res.status(201).json({ success: true, message: 'Message sent' });

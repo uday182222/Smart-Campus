@@ -11,10 +11,18 @@ router.use(authMiddleware.authenticate);
 router.get('/:classId/:date', attendanceController.getClassAttendance);
 
 // POST /api/attendance - Mark attendance (single or bulk)
-router.post('/', authMiddleware.requireTeacher, attendanceController.markAttendance);
+router.post(
+  '/',
+  authMiddleware.requireRole('TEACHER', 'ADMIN', 'PRINCIPAL'),
+  attendanceController.markAttendance
+);
 
 // PUT /api/attendance/:id - Edit existing attendance
-router.put('/:id', authMiddleware.requireTeacher, attendanceController.editAttendance);
+router.put(
+  '/:id',
+  authMiddleware.requireRole('TEACHER', 'ADMIN', 'PRINCIPAL'),
+  attendanceController.editAttendance
+);
 
 // GET /api/attendance/history/:studentId - Get student attendance history
 router.get('/history/:studentId', attendanceController.getStudentHistory);

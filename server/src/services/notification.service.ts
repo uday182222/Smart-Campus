@@ -17,7 +17,38 @@ interface SendNotificationOptions {
   priority?: 'low' | 'normal' | 'high';
 }
 
+interface ExpoPushOptions {
+  to: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+}
+
 export class NotificationService {
+  /**
+   * Send push notification via Expo Push API
+   */
+  static async sendExpoPush(options: ExpoPushOptions): Promise<void> {
+    try {
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: options.to,
+          title: options.title,
+          body: options.body,
+          data: options.data ?? {},
+        }),
+      });
+
+      if (!response.ok) {
+        logger.warn(`Expo push failed with status ${response.status}`);
+      }
+    } catch (error) {
+      logger.error('Error sending Expo push notification:', error);
+    }
+  }
+
   /**
    * Send notification(s) to user(s)
    */
@@ -34,7 +65,6 @@ export class NotificationService {
         priority = 'normal',
       } = options;
 
-      // Determine target user IDs
       let targetUserIds: string[] = [];
       if (userId) {
         targetUserIds = [userId];
@@ -45,7 +75,6 @@ export class NotificationService {
         return;
       }
 
-      // Create notifications
       await Promise.all(
         targetUserIds.map((targetUserId) =>
           prisma.notification.create({
@@ -66,23 +95,21 @@ export class NotificationService {
       logger.info(`Sent ${targetUserIds.length} notification(s) for category: ${category}`);
     } catch (error) {
       logger.error('Error sending notification:', error);
-      // Don't throw - notification failures shouldn't break the main flow
     }
   }
 
   /**
-   * Send notification to parents when attendance is marked
+   * Notify parent(s) when a student is marked absent or late
    */
   static async notifyAttendanceMarked(studentId: string, status: string, date: string): Promise<void> {
     try {
-      // Get student's parent(s)
+      if (status !== 'absent' && status !== 'late') {
+        return;
+      }
+
       const student = await prisma.user.findUnique({
         where: { id: studentId },
-        select: {
-          id: true,
-          name: true,
-          metadata: true,
-        },
+        select: { id: true, name: true },
       });
 
       if (!student) {
@@ -90,41 +117,56 @@ export class NotificationService {
         return;
       }
 
-      // Get parent IDs from student metadata or find parents linked to student
-      // This is a simplified version - adjust based on your data model
-      const parentIds: string[] = [];
-      
-      // If you have a parent-student relationship table, query it here
-      // For now, we'll try to get from metadata
-      if (student.metadata && typeof student.metadata === 'object') {
-        const metadata = student.metadata as any;
-        if (metadata.parentIds && Array.isArray(metadata.parentIds)) {
-          parentIds.push(...metadata.parentIds);
-        }
-      }
+      const parentLinks = await prisma.parentStudent.findMany({
+        where: { studentId },
+        include: {
+          parent: {
+            select: { id: true, name: true, pushToken: true },
+          },
+        },
+      });
 
-      if (parentIds.length === 0) {
+      if (parentLinks.length === 0) {
         logger.warn(`No parents found for student ${studentId}`);
         return;
       }
 
-      const statusText = status === 'present' ? 'present' : status === 'absent' ? 'absent' : status === 'late' ? 'late' : status;
+      const statusLabel = status === 'absent' ? 'ABSENT' : 'LATE';
+      const formattedDate = new Date(date).toLocaleDateString();
 
-      await this.sendNotification({
-        userIds: parentIds,
-        category: 'attendance',
-        title: 'Attendance Marked',
-        body: `${student.name} was marked as ${statusText} on ${new Date(date).toLocaleDateString()}`,
-        data: {
-          studentId,
-          studentName: student.name,
-          status,
-          date,
-          type: 'attendance',
-        },
-        channels: ['push', 'in_app'],
-        priority: status === 'absent' ? 'high' : 'normal',
-      });
+      for (const link of parentLinks) {
+        const parent = link.parent;
+        const alertBody = `${student.name} was marked ${statusLabel} today (${formattedDate})`;
+
+        await prisma.notification.create({
+          data: {
+            userId: parent.id,
+            category: 'ATTENDANCE',
+            title: 'Attendance Alert',
+            body: alertBody,
+            data: {
+              type: 'ATTENDANCE',
+              studentId: student.id,
+              studentName: student.name,
+              status,
+              date,
+            } as any,
+            channels: ['in_app', 'push'] as any,
+            priority: 'high',
+            status: 'sent',
+            sentAt: new Date(),
+          },
+        });
+
+        if (parent.pushToken) {
+          await this.sendExpoPush({
+            to: parent.pushToken,
+            title: 'Attendance Alert 🔔',
+            body: `${student.name} was marked ${statusLabel} today`,
+            data: { type: 'ATTENDANCE', studentId: student.id },
+          });
+        }
+      }
     } catch (error) {
       logger.error('Error sending attendance notification:', error);
     }
@@ -175,13 +217,11 @@ export class NotificationService {
     maxMarks: number
   ): Promise<void> {
     try {
-      // Get student's parent(s)
       const student = await prisma.user.findUnique({
         where: { id: studentId },
         select: {
           id: true,
           name: true,
-          metadata: true,
         },
       });
 
@@ -190,14 +230,12 @@ export class NotificationService {
         return;
       }
 
-      // Get parent IDs
-      const parentIds: string[] = [];
-      if (student.metadata && typeof student.metadata === 'object') {
-        const metadata = student.metadata as any;
-        if (metadata.parentIds && Array.isArray(metadata.parentIds)) {
-          parentIds.push(...metadata.parentIds);
-        }
-      }
+      const parentLinks = await prisma.parentStudent.findMany({
+        where: { studentId },
+        select: { parentId: true },
+      });
+
+      const parentIds = parentLinks.map((link) => link.parentId);
 
       if (parentIds.length === 0) {
         logger.warn(`No parents found for student ${studentId}`);
@@ -229,4 +267,3 @@ export class NotificationService {
     }
   }
 }
-

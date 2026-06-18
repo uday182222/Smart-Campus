@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, User, Settings, HelpCircle, LogOut, ChevronRight } from 'lucide-react-native';
+import { Calendar, User, Settings, HelpCircle, LogOut, ChevronRight, Users } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
@@ -13,6 +13,7 @@ import { T } from '../../constants/theme';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
 
 const MENU: Array<{ key: string; label: string; Icon: any; screen: string }> = [
+  { key: 'Groups', label: 'Groups', Icon: Users, screen: 'Groups' },
   { key: 'Calendar', label: 'Calendar', Icon: Calendar, screen: 'Calendar' },
   { key: 'Profile', label: 'Profile', Icon: User, screen: 'Profile' },
   { key: 'Settings', label: 'Settings', Icon: Settings, screen: 'Settings' },
@@ -75,6 +76,10 @@ export default function TeacherMoreScreen() {
             <TouchableOpacity
               key={item.key}
               onPress={() => {
+                if (item.screen === 'Groups') {
+                  safeNavigate(() => navigation.navigate('Groups'));
+                  return;
+                }
                 if (item.screen === 'Calendar') {
                   safeNavigate(() => navigation.getParent()?.navigate('TeacherClasses' as any, { screen: 'Calendar' } as any));
                   return;

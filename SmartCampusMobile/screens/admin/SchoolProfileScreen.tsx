@@ -5,7 +5,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Share, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Copy, Building2 } from 'lucide-react-native';
+import { Copy, Building2, ChevronLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
@@ -13,6 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LightButton } from '../../components/ui';
 import { T } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
 const COLOR_SWATCHES = ['#1E40AF', '#065F46', '#7C3AED', '#DC2626', '#D97706', '#0E7490', '#2B5CE6'];
@@ -22,7 +23,6 @@ export default function SchoolProfileScreen() {
   const navigation = useNavigation<any>();
   const { theme, setSchoolTheme } = useSchoolTheme();
   const { userData } = useAuth();
-  const primary = T.primary;
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState(theme.schoolName || '');
@@ -176,40 +176,31 @@ export default function SchoolProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
-      {/* Header (flat) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }} numberOfLines={1}>
-              {theme.schoolName || 'Admin'}
-            </Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>School Profile</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('Notifications');
-                } catch (_e) {}
-              }}
-            >
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </Pressable>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('AdminProfile');
-                } catch (_e) {}
-              }}
-            >
-              <Text style={{ color: T.textWhite, fontWeight: '900' }}>{initial}</Text>
-            </Pressable>
-          </View>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
+          >
+            <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>School Profile</Text>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }} numberOfLines={1}>
+          {name || theme.schoolName || 'Your school'}
+        </Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 }}>
           <View style={{ width: 100, alignItems: 'center' }}>
             <View
               style={{
@@ -260,7 +251,7 @@ export default function SchoolProfileScreen() {
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
           <Text style={{ color: T.textDark, fontSize: 18, fontWeight: '900', marginBottom: 16 }}>School Information</Text>
 
-          <Text style={{ color: T.textMuted, fontSize: 12, fontWeight: '900', marginBottom: 6 }}>School name</Text>
+          <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 }}>SCHOOL NAME</Text>
           <TextInput
             style={{
               backgroundColor: T.primaryLight,
@@ -278,7 +269,7 @@ export default function SchoolProfileScreen() {
             onChangeText={setName}
           />
 
-          <Text style={{ color: T.textMuted, fontSize: 12, fontWeight: '900', marginBottom: 6 }}>Address</Text>
+          <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 }}>ADDRESS</Text>
           <TextInput
             style={{
               backgroundColor: T.primaryLight,
@@ -299,10 +290,10 @@ export default function SchoolProfileScreen() {
             multiline
           />
 
-          <Text style={{ color: T.textMuted, fontSize: 12, fontWeight: '900', marginBottom: 6 }}>School code</Text>
+          <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 }}>SCHOOL CODE</Text>
           <Pressable onPress={copyCode} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: T.primaryLight, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8, borderWidth: 1.5, borderColor: T.inputBorder }}>
-            <Text style={{ flex: 1, color: primary, fontVariant: ['tabular-nums'], fontSize: 16, fontWeight: '800' }}>{schoolCode}</Text>
-            <Copy size={18} color={primary} strokeWidth={1.8} />
+            <Text style={{ flex: 1, color: T.primary, fontVariant: ['tabular-nums'], fontSize: 15, fontWeight: '600' }}>{schoolCode}</Text>
+            <Copy size={18} color={T.primary} strokeWidth={1.8} />
           </Pressable>
           {canChangeCode ? (
             <LightButton label="Change school code" variant="outline" icon="create-outline" iconPosition="left" onPress={() => setChangeCodeModalVisible(true)} fullWidth={false} style={{ marginBottom: 12 }} />
@@ -320,14 +311,14 @@ export default function SchoolProfileScreen() {
           <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '900', marginBottom: 8 }}>PRIMARY</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
             {COLOR_SWATCHES.map((c) => (
-              <Pressable key={c} onPress={() => setPrimaryColor(c)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c, marginRight: 10, marginBottom: 8, borderWidth: primaryColor === c ? 3 : 0, borderColor: '#FFFFFF' }} />
+              <Pressable key={c} onPress={() => setPrimaryColor(c)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c, marginRight: 10, marginBottom: 8, borderWidth: primaryColor === c ? 3 : 0, borderColor: T.textWhite }} />
             ))}
           </View>
 
           <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '900', marginBottom: 8 }}>SECONDARY</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
             {COLOR_SWATCHES.map((c) => (
-              <Pressable key={`s-${c}`} onPress={() => setSecondaryColor(c)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c, marginRight: 10, marginBottom: 8, borderWidth: secondaryColor === c ? 3 : 0, borderColor: '#FFFFFF' }} />
+              <Pressable key={`s-${c}`} onPress={() => setSecondaryColor(c)} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c, marginRight: 10, marginBottom: 8, borderWidth: secondaryColor === c ? 3 : 0, borderColor: T.textWhite }} />
             ))}
           </View>
 
@@ -335,7 +326,7 @@ export default function SchoolProfileScreen() {
             <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginBottom: 8 }}>Preview</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: secondaryColor, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>S</Text>
+                <Text style={{ color: T.textWhite, fontWeight: '800' }}>S</Text>
               </View>
               <Text style={{ color: T.textDark, fontWeight: '900' }}>School theme</Text>
             </View>
@@ -373,6 +364,8 @@ export default function SchoolProfileScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <AdminFloatingNav navigation={navigation} activeTab="SchoolProfile" />
     </View>
   );
 }

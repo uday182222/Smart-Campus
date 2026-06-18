@@ -1,16 +1,15 @@
 /**
- * Super Admin — School Detail: DT theme, no shadows, admin credentials, danger zone.
+ * Super Admin — School Detail: light theme (T tokens), admin credentials, danger zone.
  */
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal, TextInput, Switch } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronLeft, Copy, RefreshCw, UserX, Trash2, Check, X, Users } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSuperAdminAccent } from '../../hooks/useSuperAdminAccent';
-import { DarkHeader, StatCard3D, DarkButton } from '../../components/ui';
-import { DT } from '../../constants/darkTheme';
+import { T } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
+import { SuperAdminFloatingNav } from '../../components/ui/SuperAdminFloatingNav';
 
 interface SchoolDetailData {
   school: {
@@ -42,7 +41,6 @@ export default function SchoolDetailScreen() {
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const schoolId = route.params?.schoolId;
-  const { accent } = useSuperAdminAccent();
   const [data, setData] = useState<SchoolDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,10 +137,17 @@ export default function SchoolDetailScreen() {
 
   if (!schoolId || (loading && !data)) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: DT.bg }} edges={['top']}>
-        <DarkHeader showBack accent={accent} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}>
+              <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: T.textDark }}>School</Text>
+          </View>
+        </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={accent} />
+          <ActivityIndicator size="large" color={T.primary} />
         </View>
       </SafeAreaView>
     );
@@ -153,143 +158,256 @@ export default function SchoolDetailScreen() {
   const admin = data?.admin;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: DT.bg }} edges={['top']}>
-      <View style={{ backgroundColor: DT.card, paddingTop: insets.top + 16, paddingBottom: 24, paddingHorizontal: DT.px }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+      <View style={{ paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: T.px, backgroundColor: T.bg }}>
         <TouchableOpacity
           onPress={() => {
             if (navigation.canGoBack()) navigation.goBack();
           }}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: DT.border, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: T.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+            ...T.shadowSm,
+          }}
         >
-          <Ionicons name="arrow-back" size={22} color={DT.textPrimary} />
+          <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 30, fontWeight: '900', color: DT.textPrimary, letterSpacing: -0.5, marginTop: 12 }}>{school?.name}</Text>
-        <Text style={{ fontSize: 14, color: accent, fontStyle: 'italic', fontVariant: ['tabular-nums'], marginTop: 4 }}>{school?.schoolCode ?? '—'}</Text>
-        <View style={{ marginTop: 8 }}>
-          <View style={{ backgroundColor: school?.isActive ? accent : DT.border, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start' }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: school?.isActive ? '#1A1A1A' : DT.textSecondary }}>{school?.isActive ? 'Active' : 'Inactive'}</Text>
+        <Text style={{ fontSize: 22, fontWeight: '900', color: T.textDark, letterSpacing: -0.4, marginTop: 12 }} numberOfLines={2}>
+          {school?.name}
+        </Text>
+        <Text style={{ fontSize: 13, color: T.textMuted, fontVariant: ['tabular-nums'], marginTop: 6 }} numberOfLines={1}>
+          {school?.schoolCode ?? '—'}
+        </Text>
+
+        <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View
+            style={{
+              backgroundColor: school?.isActive ? T.successTint : T.dangerTint,
+              borderRadius: 14,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderWidth: 1.5,
+              borderColor: T.inputBorder,
+            }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '800', color: school?.isActive ? T.success : T.danger }}>
+              {school?.isActive ? 'Active' : 'Inactive'}
+            </Text>
           </View>
         </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: DT.px, paddingBottom: 40, paddingTop: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140, paddingTop: 12 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
       >
         {counts && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
-            <View style={{ minWidth: 130, marginRight: 12 }}>
-              <StatCard3D value={counts.students} label="Students" accent={accent} delay={0} />
-            </View>
-            <View style={{ minWidth: 130, marginRight: 12 }}>
-              <StatCard3D value={counts.teachers} label="Teachers" accent={accent} delay={100} />
-            </View>
-            <View style={{ minWidth: 130, marginRight: 12 }}>
-              <StatCard3D value={counts.classes} label="Classes" accent={accent} delay={200} />
-            </View>
-            <View style={{ minWidth: 130 }}>
-              <StatCard3D value={counts.pendingRequests} label="Pending" accent={accent} delay={300} />
-            </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: T.px, gap: 12 }}>
+            {[
+              { value: counts.students, label: 'Students' },
+              { value: counts.teachers, label: 'Teachers' },
+              { value: counts.classes, label: 'Classes' },
+              { value: counts.pendingRequests, label: 'Pending' },
+            ].map((s) => (
+              <View key={s.label} style={{ width: 140, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, ...T.shadowSm }}>
+                <Text style={{ color: T.primary, fontSize: 26, fontWeight: '900' }}>{s.value}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 6, fontWeight: '800' }}>{s.label}</Text>
+                <Text style={{ color: T.textPlaceholder, fontSize: 10, marginTop: 2 }}>this school</Text>
+              </View>
+            ))}
           </ScrollView>
         )}
 
-        <Text style={{ fontSize: 12, color: DT.textMuted, fontStyle: 'italic', marginTop: 24, marginBottom: 8 }}>admin credentials</Text>
-        <View style={{ backgroundColor: DT.card, borderRadius: DT.radius.lg, padding: 20 }}>
+        <Text style={{ fontSize: 11, color: T.textMuted, fontWeight: '700', letterSpacing: 0.8, marginTop: 24, marginBottom: 8 }}>
+          ADMIN CREDENTIALS
+        </Text>
+        <View style={{ backgroundColor: T.primaryLight, borderRadius: T.radius.xxl, padding: 16, borderWidth: 1.5, borderColor: T.primary, ...T.shadowSm }}>
           {admin ? (
             <>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: DT.border }}>
-                <Text style={{ color: DT.textPrimary, flex: 1 }}>{admin.email}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.6 }}>EMAIL</Text>
+                  <Text style={{ color: T.textDark, fontSize: 15, fontWeight: '700', marginTop: 6 }}>{admin.email}</Text>
+                </View>
                 <TouchableOpacity
                   onPress={() => {
                     const credentials = admin.email;
                     Alert.alert('Credentials', credentials);
                   }}
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
                 >
-                  <Ionicons name="copy-outline" size={20} color={accent} />
+                  <Copy size={18} color={T.primary} strokeWidth={1.8} />
                 </TouchableOpacity>
               </View>
-              <View style={{ marginTop: 12 }}>
-                <DarkButton label="Reset Password" variant="outline-accent" icon="refresh-outline" iconPosition="left" accent={accent} onPress={handleResetPassword} />
-                <View style={{ marginTop: 8 }}>
-                  <DarkButton label="Remove Admin" variant="outline-danger" icon="person-remove-outline" iconPosition="left" onPress={handleDeleteAdmin} />
-                </View>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleResetPassword}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: T.radius.full,
+                    backgroundColor: T.card,
+                    borderWidth: 1.5,
+                    borderColor: T.primary,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    ...T.shadowSm,
+                  }}
+                >
+                  <RefreshCw size={18} color={T.primary} strokeWidth={1.8} />
+                  <Text style={{ color: T.primary, fontWeight: '800' }}>Reset Password</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleDeleteAdmin}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: T.radius.full,
+                    backgroundColor: T.card,
+                    borderWidth: 1.5,
+                    borderColor: T.inputBorder,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    ...T.shadowSm,
+                  }}
+                >
+                  <UserX size={18} color={T.danger} strokeWidth={1.8} />
+                  <Text style={{ color: T.danger, fontWeight: '800' }}>Remove Admin</Text>
+                </TouchableOpacity>
               </View>
             </>
           ) : (
-            <Text style={{ color: DT.textSecondary, fontSize: 14 }}>No admin user for this school.</Text>
+            <Text style={{ color: T.textMuted, fontSize: 14 }}>No admin user for this school.</Text>
           )}
         </View>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: DT.textPrimary }}>Users</Text>
-          <View style={{ minWidth: 140 }}>
-            <DarkButton label="View All →" variant="ghost" icon="arrow-forward" iconPosition="right" fullWidth={false} onPress={() => navigation.navigate('SchoolUsers', { schoolId })} />
-          </View>
+          <Text style={{ fontSize: 18, fontWeight: '900', color: T.textDark }}>Users</Text>
+          <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('SchoolUsers', { schoolId })}>
+            <Text style={{ color: T.primary, fontWeight: '800', fontSize: 13 }}>View All →</Text>
+          </TouchableOpacity>
         </View>
-        <View style={{ backgroundColor: DT.card, borderRadius: 12, padding: 12 }}>
+        <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 12, ...T.shadowSm }}>
           {previewUsers.length > 0 ? (
             previewUsers.map((u) => (
-              <View key={u.id} style={{ backgroundColor: DT.card2, borderRadius: 12, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: accent + '40', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <Text style={{ color: accent, fontWeight: '700', fontSize: 14 }}>{(u.name || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}</Text>
+              <View key={u.id} style={{ backgroundColor: T.bg, borderRadius: T.radius.xxl, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: T.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1.5, borderColor: T.inputBorder }}>
+                  <Text style={{ color: T.primary, fontWeight: '900', fontSize: 14 }}>{(u.name || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: DT.textPrimary, fontWeight: '700', fontSize: 14 }}>{u.name || '—'}</Text>
-                  <Text style={{ color: DT.textMuted, fontSize: 12, marginTop: 2 }}>{u.email || '—'}</Text>
+                  <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 14 }} numberOfLines={1}>
+                    {u.name || '—'}
+                  </Text>
+                  <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                    {u.email || '—'}
+                  </Text>
                 </View>
-                <View style={{ borderWidth: 1, borderColor: accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Text style={{ color: accent, fontSize: 11, fontWeight: '600' }}>{u.role}</Text>
+                <View style={{ borderWidth: 1.5, borderColor: T.inputBorder, backgroundColor: T.card, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Users size={14} color={T.primary} strokeWidth={1.8} />
+                  <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>{u.role}</Text>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={{ color: DT.textMuted, fontSize: 14, fontStyle: 'italic' }}>No users yet</Text>
+            <Text style={{ color: T.textMuted, fontSize: 14 }}>No users yet</Text>
           )}
         </View>
 
-        <View style={{ marginTop: 24, marginBottom: 40, backgroundColor: '#1A0A0A', borderRadius: DT.radius.lg, padding: 20, borderWidth: 1, borderColor: '#3A1A1A' }}>
-          <Text style={{ fontSize: 20, fontWeight: '900', color: DT.danger }}>Danger Zone</Text>
-          <Text style={{ fontSize: 12, color: DT.textMuted, fontStyle: 'italic', marginTop: 4 }}>Irreversible actions</Text>
+        <Text style={{ fontSize: 11, color: T.textMuted, fontWeight: '700', letterSpacing: 0.8, marginTop: 24, marginBottom: 8 }}>
+          DANGER ZONE
+        </Text>
+        <View style={{ marginBottom: 40, backgroundColor: T.dangerTint, borderRadius: T.radius.xxl, padding: 16, borderWidth: 1.5, borderColor: T.danger, ...T.shadowSm }}>
+          <Text style={{ fontSize: 18, fontWeight: '900', color: T.danger }}>Danger Zone</Text>
+          <Text style={{ fontSize: 12, color: T.textMuted, marginTop: 6 }}>Irreversible actions</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}>
-            <Text style={{ color: DT.textPrimary }}>School active</Text>
-            <Switch value={school?.isActive ?? false} onValueChange={toggleStatus} trackColor={{ false: DT.border, true: accent }} thumbColor="#FFFFFF" />
+            <Text style={{ color: T.textDark, fontWeight: '700' }}>School active</Text>
+            <Switch value={school?.isActive ?? false} onValueChange={toggleStatus} trackColor={{ false: T.inputBorder, true: T.primary }} thumbColor="#FFFFFF" />
           </View>
-          <View style={{ marginTop: 12 }}>
-            <DarkButton label="Delete School" variant="danger" icon="trash-outline" iconPosition="left" onPress={handleDeleteSchool} />
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleDeleteSchool}
+            style={{
+              marginTop: 12,
+              height: 48,
+              borderRadius: T.radius.full,
+              backgroundColor: T.danger,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              gap: 8,
+              ...T.shadowSm,
+            }}
+          >
+            <Trash2 size={18} color={T.textWhite} strokeWidth={1.8} />
+            <Text style={{ color: T.textWhite, fontWeight: '900' }}>Delete School</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
       <Modal visible={!!resetPasswordModal} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: DT.card, borderRadius: 24, padding: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: DT.textPrimary, textAlign: 'center' }}>New Password</Text>
-            <Text style={{ fontSize: 12, color: DT.textMuted, fontStyle: 'italic', marginTop: 8, textAlign: 'center' }}>⚠️ Save this — shown only once</Text>
-            <View style={{ backgroundColor: DT.input, borderRadius: 12, padding: 12, marginTop: 16 }}>
-              <Text style={{ fontVariant: ['tabular-nums'], color: DT.textPrimary, fontSize: 16 }}>{resetPasswordModal?.newPassword}</Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, ...T.shadowLg }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: T.textDark, textAlign: 'center' }}>New Password</Text>
+            <Text style={{ fontSize: 12, color: T.textMuted, marginTop: 8, textAlign: 'center' }}>Save this — shown only once</Text>
+            <View style={{ backgroundColor: T.bg, borderRadius: T.radius.lg, padding: 12, marginTop: 16, borderWidth: 1.5, borderColor: T.inputBorder }}>
+              <Text style={{ fontVariant: ['tabular-nums'], color: T.textDark, fontSize: 16, fontWeight: '800' }}>{resetPasswordModal?.newPassword}</Text>
             </View>
-            <DarkButton label="Done" variant="accent" icon="checkmark" iconPosition="right" accent={accent} onPress={() => setResetPasswordModal(null)} style={{ marginTop: 20 }} />
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setResetPasswordModal(null)}
+              style={{ marginTop: 20, height: 48, borderRadius: T.radius.full, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, ...T.shadowSm }}
+            >
+              <Text style={{ color: T.textWhite, fontWeight: '900' }}>Done</Text>
+              <Check size={18} color={T.textWhite} strokeWidth={1.8} />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
       <Modal visible={deleteModalVisible} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: DT.card, borderRadius: 24, padding: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: DT.textPrimary, textAlign: 'center' }}>Delete School</Text>
-            <Text style={{ fontSize: 13, color: DT.textMuted, marginTop: 8, textAlign: 'center' }}>Type the school name to confirm: "{data?.school.name}"</Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, ...T.shadowLg }}>
+            <Text style={{ fontSize: 18, fontWeight: '900', color: T.textDark, textAlign: 'center' }}>Delete School</Text>
+            <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 8, textAlign: 'center' }}>Type the school name to confirm: "{data?.school.name}"</Text>
             <TextInput
-              style={{ backgroundColor: DT.input, borderRadius: DT.radius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: DT.textPrimary, marginTop: 16, borderWidth: 1, borderColor: DT.border }}
+              style={{ backgroundColor: T.bg, borderRadius: T.radius.lg, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: T.textDark, marginTop: 16, borderWidth: 1.5, borderColor: T.inputBorder }}
               placeholder="School name"
-              placeholderTextColor={DT.textMuted}
+              placeholderTextColor={T.textPlaceholder}
               value={deleteConfirmName}
               onChangeText={setDeleteConfirmName}
             />
-            <DarkButton label="Delete Permanently" variant="danger" icon="trash-outline" iconPosition="left" onPress={confirmDeleteSchool} style={{ marginTop: 20 }} />
-            <DarkButton label="Cancel" variant="ghost" icon="close-outline" iconPosition="left" onPress={() => setDeleteModalVisible(false)} style={{ marginTop: 8 }} />
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={confirmDeleteSchool}
+              style={{ marginTop: 20, height: 48, borderRadius: T.radius.full, backgroundColor: T.danger, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, ...T.shadowSm }}
+            >
+              <Trash2 size={18} color={T.textWhite} strokeWidth={1.8} />
+              <Text style={{ color: T.textWhite, fontWeight: '900' }}>Delete Permanently</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setDeleteModalVisible(false)}
+              style={{ marginTop: 10, height: 48, borderRadius: T.radius.full, backgroundColor: T.card, borderWidth: 1.5, borderColor: T.inputBorder, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+            >
+              <X size={18} color={T.textDark} strokeWidth={1.8} />
+              <Text style={{ color: T.textDark, fontWeight: '900' }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      <SuperAdminFloatingNav navigation={navigation} activeTab="SchoolManagement" />
     </SafeAreaView>
   );
 }

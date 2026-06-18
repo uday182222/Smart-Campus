@@ -68,5 +68,7 @@ export type { TeacherFloatingNavProps } from './TeacherFloatingNav';
 export { BusHelperFloatingNav } from './BusHelperFloatingNav';
 export type { BusHelperFloatingNavProps } from './BusHelperFloatingNav';
 
+export { SuperAdminFloatingNav } from './SuperAdminFloatingNav';
+
 // Re-export theme for convenience
 export * from '../../theme';

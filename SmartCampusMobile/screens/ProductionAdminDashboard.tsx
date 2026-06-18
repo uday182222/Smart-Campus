@@ -1,9 +1,9 @@
 /**
- * Admin Dashboard — premium gradient header + PD cards.
+ * Admin / Principal dashboard — parent-style tab root header (T.bg, T.card, Lucide).
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Dimensions, Image } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Dimensions, Animated, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Bell,
@@ -15,6 +15,8 @@ import {
   BarChart3,
   Megaphone,
   ChevronRight,
+  Wallet,
+  CheckCircle,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +26,7 @@ import { DashboardSkeleton } from '../components/ui';
 import { T } from '../constants/theme';
 import { apiClient } from '../services/apiClient';
 import { canAccess } from '../utils/rolePermissions';
+import { AdminFloatingNav } from '../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -49,16 +52,17 @@ interface PendingItem {
 }
 
 const QUICK = [
-  { label: 'Users', sub: 'Manage accounts', Icon: UserPlus, screen: 'UserManagement' as const },
-  { label: 'Classes', sub: 'Sections & rooms', Icon: Grid3X3, screen: 'ClassManagement' as const },
-  { label: 'Reports', sub: 'Attendance', Icon: BarChart3, screen: 'AttendanceReport' as const },
-  { label: 'Announce', sub: 'Broadcast', Icon: Megaphone, screen: 'Announcements' as const },
-];
+  { label: 'Pending Requests', sub: 'Approvals', Icon: UserPlus, screen: 'PendingRequests' as const },
+  { label: 'Users', sub: 'Manage accounts', Icon: Users, screen: 'UserManagement' as const },
+  { label: 'Classes', sub: 'Sections & rooms', Icon: Layers, screen: 'ClassManagement' as const },
+  { label: 'Fees', sub: 'Collection', Icon: Wallet, screen: 'FeeReport' as const },
+  { label: 'Attendance', sub: 'Mark & track', Icon: CheckCircle, screen: 'AttendanceReport' as const },
+  { label: 'Announcements', sub: 'Broadcast', Icon: Megaphone, screen: 'Announcements' as const },
+] as const;
 
 export default function ProductionAdminDashboard() {
   const { userData } = useAuth();
   const { theme } = useSchoolTheme();
-  const primary = T.primary;
   const navigation = useNavigation<any>();
   const { setDrawerNavigation, openDrawer } = useDrawer();
   const insets = useSafeAreaInsets();
@@ -73,6 +77,15 @@ export default function ProductionAdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recent, setRecent] = useState<PendingItem[]>([]);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const animateIn = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const load = useCallback(async () => {
     try {
@@ -96,13 +109,25 @@ export default function ProductionAdminDashboard() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!loading) animateIn();
+  }, [loading, animateIn]);
+
   const onRefresh = () => {
     setRefreshing(true);
     load();
   };
 
-  const adminName = userData?.name ?? 'Administrator';
-  const roleLabel = userData?.role === 'PRINCIPAL' ? 'Principal' : 'Admin';
+  const adminName = (userData?.name ?? 'Administrator').replace(/\s*\([^)]*\)\s*$/, '');
+  const roleLabel = userData?.role === 'PRINCIPAL' ? 'Principal' : 'School Admin';
+  const initials =
+    adminName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning,' : hour < 17 ? 'Good Afternoon,' : 'Good Evening,';
   const present = stats?.todayAttendance?.present ?? 0;
@@ -115,18 +140,72 @@ export default function ProductionAdminDashboard() {
   const collectedPct = Math.min(100, (collected / totalFees) * 100);
   const rateLabel = `${Math.round(collectedPct)}% collection rate`;
 
-  const statChips = [
-    { Icon: Users, n: stats?.totalStudents ?? 0, l: 'Students' },
-    { Icon: GraduationCap, n: stats?.totalTeachers ?? 0, l: 'Teachers' },
-    { Icon: Layers, n: stats?.totalClasses ?? 0, l: 'Classes' },
-    { Icon: UserPlus, n: stats?.pendingRequests ?? 0, l: 'Pending' },
-  ];
+  const schoolName = theme.schoolName || 'School';
+  const todayLine = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
   if (loading && !stats) {
     return (
       <View style={{ flex: 1, backgroundColor: T.bg }}>
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 16 }}>
-          <Text style={{ ...T.font.appTitle, color: T.textDark }}>Dashboard</Text>
+        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: T.card,
+                borderRadius: T.radius.full,
+                paddingVertical: 6,
+                paddingLeft: 6,
+                paddingRight: 16,
+                ...T.shadowSm,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: T.primary,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: T.textWhite }}>{initials}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 10, color: T.textPlaceholder, fontWeight: '500' }}>{greeting}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }}>{adminName}</Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
+            >
+              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
+            </View>
+          </View>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: '800',
+              color: T.textDark,
+              letterSpacing: -0.8,
+              lineHeight: 34,
+              marginTop: 18,
+            }}
+            numberOfLines={2}
+          >
+            {schoolName}
+          </Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>{roleLabel}</Text>
         </View>
         <DashboardSkeleton />
       </View>
@@ -135,147 +214,374 @@ export default function ProductionAdminDashboard() {
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
+      <StatusBar barStyle="dark-content" backgroundColor={T.bg} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
       >
-        {/* Header (flat) */}
         <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark, flex: 1 }} numberOfLines={1}>
-              {theme.schoolName || 'Admin'}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Notifications')}
-                activeOpacity={0.85}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => openDrawer?.()}
+              activeOpacity={0.85}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 10,
+                backgroundColor: T.card,
+                borderRadius: T.radius.full,
+                paddingVertical: 6,
+                paddingLeft: 6,
+                paddingRight: 16,
+                ...T.shadowSm,
+              }}
+            >
+              <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: T.card,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...T.shadowSm,
-                }}
-              >
-                <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Profile')}
-                activeOpacity={0.85}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
                   backgroundColor: T.primary,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0,
-                  ...T.shadowSm,
                 }}
               >
-                {theme.logoUrl ? (
-                  <Image source={{ uri: theme.logoUrl }} style={{ width: 44, height: 44, borderRadius: 22 }} resizeMode="cover" />
-                ) : (
-                  <Text style={{ color: T.textWhite, fontWeight: '900' }}>{adminName.charAt(0).toUpperCase()}</Text>
-                )}
-              </TouchableOpacity>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: T.textWhite }}>{initials}</Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 10, color: T.textPlaceholder, fontWeight: '500' }}>{greeting}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }} numberOfLines={1}>
+                  {adminName}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.85}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
+            >
+              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 9,
+                  right: 9,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: T.danger,
+                  borderWidth: 2,
+                  borderColor: T.bg,
+                }}
+              />
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: '800',
+              color: T.textDark,
+              letterSpacing: -0.8,
+              lineHeight: 34,
+              marginTop: 18,
+            }}
+            numberOfLines={2}
+          >
+            {schoolName}
+          </Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>{roleLabel}</Text>
+        </View>
+
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+            flexDirection: 'row',
+            gap: 12,
+            paddingHorizontal: T.px,
+            marginTop: 20,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('AttendanceReport')}
+            style={{
+              flex: 1.1,
+              backgroundColor: T.primary,
+              borderRadius: T.radius.xl,
+              padding: 18,
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <View
+              style={{
+                position: 'absolute',
+                bottom: -28,
+                right: -28,
+                width: 100,
+                height: 100,
+                borderRadius: 50,
+                backgroundColor: 'rgba(255,255,255,0.06)',
+              }}
+            />
+            <View
+              style={{
+                position: 'absolute',
+                top: -18,
+                right: 14,
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+              }}
+            />
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                borderRadius: T.radius.full,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                alignSelf: 'flex-start',
+                marginBottom: 12,
+              }}
+            >
+              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.9)' }} />
+              <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 0.4 }}>
+                LIVE
+              </Text>
             </View>
-          </View>
+            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.8 }}>
+              TODAY&apos;S ATTENDANCE
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 4 }}>
+              <Text style={{ fontSize: 48, fontWeight: '800', color: T.textWhite, letterSpacing: -2, lineHeight: 52 }}>
+                {pct}
+              </Text>
+              <Text style={{ fontSize: 20, fontWeight: '400', color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>%</Text>
+            </View>
+            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>school-wide</Text>
+          </TouchableOpacity>
 
-          <Text style={{ color: T.textMuted, fontSize: 13, marginTop: 14 }}>{greeting}</Text>
-          <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 26, letterSpacing: -0.8, marginTop: 4 }}>
-            {adminName} ({roleLabel})
-          </Text>
-          <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 6 }}>
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-          </Text>
-        </View>
+          <View style={{ flex: 1, gap: 10 }}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('UserManagement')}
+              style={{ backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: T.radius.sm,
+                  backgroundColor: T.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <Users size={16} color={T.primary} strokeWidth={1.8} />
+              </View>
+              <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>STUDENTS</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
+                <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
+                  {stats?.totalStudents ?? 0}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-        {/* Stat cards (2x2 grid) */}
-        <View style={{ paddingHorizontal: T.px, marginTop: 14, flexDirection: 'column', gap: 10 }}>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {statChips.slice(0, 2).map((s, i) => {
-              const Icon = s.Icon;
-              return (
-                <View key={i} style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, ...T.shadowSm }}>
-                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: T.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={20} color={primary} strokeWidth={1.8} />
-                  </View>
-                  <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '800', marginTop: 10 }}>{s.l.toUpperCase()}</Text>
-                  <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 26, marginTop: 2 }}>{s.n}</Text>
-                </View>
-              );
-            })}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('UserManagement')}
+              style={{ backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: T.radius.sm,
+                  backgroundColor: T.primaryLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <GraduationCap size={16} color={T.primary} strokeWidth={1.8} />
+              </View>
+              <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>TEACHERS</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
+                <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
+                  {stats?.totalTeachers ?? 0}
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {statChips.slice(2, 4).map((s, i) => {
-              const Icon = s.Icon;
-              return (
-                <View key={i} style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, ...T.shadowSm }}>
-                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: T.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={20} color={primary} strokeWidth={1.8} />
-                  </View>
-                  <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '800', marginTop: 10 }}>{s.l.toUpperCase()}</Text>
-                  <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 26, marginTop: 2 }}>{s.n}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
+        </Animated.View>
+
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+            flexDirection: 'row',
+            gap: 12,
+            paddingHorizontal: T.px,
+            marginTop: 12,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('ClassManagement')}
+            style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+          >
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: T.radius.sm,
+                backgroundColor: T.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <Layers size={16} color={T.primary} strokeWidth={1.8} />
+            </View>
+            <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>CLASSES</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
+              <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
+                {stats?.totalClasses ?? 0}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('PendingRequests')}
+            style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+          >
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: T.radius.sm,
+                backgroundColor: T.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <UserPlus size={16} color={T.primary} strokeWidth={1.8} />
+            </View>
+            <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>PENDING</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
+              <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
+                {stats?.pendingRequests ?? 0}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* Content */}
-        <View style={{ paddingHorizontal: T.px, paddingTop: 16 }}>
-          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, ...T.shadowSm }}>
+        <Animated.View style={{ opacity: fadeAnim, paddingTop: 16 }}>
+          <View
+            style={{
+              backgroundColor: T.card,
+              borderRadius: T.radius.xxl,
+              padding: 20,
+              ...T.shadowSm,
+              marginHorizontal: T.px,
+              marginTop: 14,
+            }}
+          >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Today's Attendance</Text>
-              <View style={{ backgroundColor: T.primaryLight, borderWidth: 1.5, borderColor: T.inputBorder, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
-                <Text style={{ color: primary, fontSize: 10, fontWeight: '900' }}>LIVE</Text>
+              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Today&apos;s Attendance</Text>
+              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700' }}>{todayLine}</Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.success, fontWeight: '900', fontSize: 22 }}>{present}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Present</Text>
+              </View>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.danger, fontWeight: '900', fontSize: 22 }}>{absent}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Absent</Text>
+              </View>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.warning, fontWeight: '900', fontSize: 22 }}>{late}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Late</Text>
               </View>
             </View>
-            <Text style={{ color: primary, fontWeight: '900', fontSize: 44, letterSpacing: -2, textAlign: 'center', marginTop: 12 }}>{pct}%</Text>
-            <Text style={{ color: T.textMuted, fontSize: 13, textAlign: 'center', marginTop: 4 }}>% present today</Text>
-            <View style={{ height: 8, backgroundColor: T.primaryTint, borderRadius: 4, marginTop: 12, overflow: 'hidden' }}>
-              <View style={{ height: 8, width: `${pct}%`, backgroundColor: T.success, borderRadius: 4 }} />
+
+            <View style={{ height: 4, backgroundColor: T.inputBorder, borderRadius: 2, overflow: 'hidden', marginTop: 14 }}>
+              <View style={{ height: 4, width: `${pct}%`, backgroundColor: T.primary }} />
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
-              <Text style={{ color: T.success, fontWeight: '800' }}>Present {present}</Text>
-              <Text style={{ color: T.danger, fontWeight: '800' }}>Absent {absent}</Text>
-              <Text style={{ color: T.warning, fontWeight: '800' }}>Late {late}</Text>
-            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('AttendanceReport')}
+              style={{
+                backgroundColor: T.primary,
+                borderRadius: T.radius.full,
+                paddingVertical: 12,
+                alignItems: 'center',
+                marginTop: 14,
+              }}
+            >
+              <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 13 }}>Mark Attendance</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 12, ...T.shadowSm }}>
+          <View
+            style={{
+              backgroundColor: T.card,
+              borderRadius: T.radius.xxl,
+              padding: 20,
+              ...T.shadowSm,
+              marginHorizontal: T.px,
+              marginTop: 14,
+            }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>New Requests</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ backgroundColor: T.primaryLight, borderWidth: 1.5, borderColor: T.inputBorder, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
-                  <Text style={{ color: primary, fontWeight: '900', fontSize: 12 }}>{stats?.pendingRequests ?? 0}</Text>
+                <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>New Requests</Text>
+                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 11 }}>{stats?.pendingRequests ?? 0}</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('PendingRequests')} activeOpacity={0.85}>
-                  <Text style={{ color: primary, fontWeight: '800', fontSize: 13 }}>View All</Text>
-                </TouchableOpacity>
               </View>
+              <TouchableOpacity onPress={() => navigation.navigate('PendingRequests')} activeOpacity={0.85}>
+                <Text style={{ color: T.primary, fontWeight: '800', fontSize: 13 }}>View All</Text>
+              </TouchableOpacity>
             </View>
-            {recent.map((r) => (
+
+            {recent.map((r, idx) => (
               <TouchableOpacity
                 key={r.id}
                 onPress={() => navigation.navigate('PendingRequests')}
                 activeOpacity={0.85}
                 style={{
-                  backgroundColor: T.primaryLight,
-                  borderRadius: 16,
-                  padding: 12,
-                  marginTop: 10,
+                  paddingVertical: 12,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  borderWidth: 1.5,
-                  borderColor: T.inputBorder,
+                  gap: 12,
+                  borderBottomWidth: idx === recent.length - 1 ? 0 : 0.5,
+                  borderBottomColor: T.inputBorder,
+                  marginTop: 6,
                 }}
               >
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 12 }}>
                     {(r.studentName || '?')
                       .split(' ')
@@ -285,10 +591,11 @@ export default function ProductionAdminDashboard() {
                       .slice(0, 2)}
                   </Text>
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={{ color: T.textDark, fontWeight: '800' }}>{r.studentName}</Text>
-                  <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 2 }}>{r.className}</Text>
-                  <Text style={{ color: T.textMuted, fontSize: 11, fontStyle: 'italic', marginTop: 2 }}>{r.parentName}</Text>
+                  <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 2 }}>
+                    {r.className} · {r.parentName}
+                  </Text>
                 </View>
                 <ChevronRight size={18} color={T.textPlaceholder} strokeWidth={1.8} />
               </TouchableOpacity>
@@ -296,8 +603,11 @@ export default function ProductionAdminDashboard() {
             {recent.length === 0 ? <Text style={{ color: T.textMuted, marginTop: 12, textAlign: 'center' }}>No pending requests</Text> : null}
           </View>
 
-          <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 18, marginTop: 18, marginBottom: 12 }}>Quick Actions</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <View style={{ paddingHorizontal: T.px, marginTop: 18, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 18 }}>Quick Actions</Text>
+          </View>
+
+          <View style={{ paddingHorizontal: T.px, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             {QUICK.filter((q) => canAccess((userData as any)?.role ?? '', q.screen)).map((q) => {
               const Icon = q.Icon;
               return (
@@ -307,24 +617,25 @@ export default function ProductionAdminDashboard() {
                   style={{
                     width: (SCREEN_W - T.px * 2 - 12) / 2,
                     backgroundColor: T.card,
-                    borderRadius: T.radius.xxl,
-                    padding: 20,
+                    borderRadius: T.radius.lg,
+                    padding: 16,
+                    alignItems: 'center',
                     marginBottom: 12,
                     ...T.shadowSm,
                   }}
                   activeOpacity={0.85}
                 >
                   <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: T.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={20} color={primary} strokeWidth={1.8} />
+                    <Icon size={20} color={T.primary} strokeWidth={1.8} />
                   </View>
-                  <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 15, marginTop: 10 }}>{q.label}</Text>
-                  <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>{q.sub}</Text>
+                  <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 12, marginTop: 10, textAlign: 'center' }}>{q.label}</Text>
+                  <Text style={{ color: T.textMuted, fontSize: 10, marginTop: 4, textAlign: 'center' }}>{q.sub}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
+          <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginHorizontal: T.px, marginTop: 4, ...T.shadowSm }}>
             <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Fee Overview</Text>
             <View style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center' }}>
               <View style={{ flex: 1, alignItems: 'center' }}>
@@ -342,8 +653,10 @@ export default function ProductionAdminDashboard() {
             </View>
             <Text style={{ color: T.textMuted, fontSize: 11, fontStyle: 'italic', marginTop: 8, textAlign: 'right' }}>{rateLabel}</Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
+
+      <AdminFloatingNav navigation={navigation} activeTab="AdminDashboard" />
     </View>
   );
 }

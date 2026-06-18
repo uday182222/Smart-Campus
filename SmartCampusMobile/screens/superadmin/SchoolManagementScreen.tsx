@@ -1,16 +1,15 @@
 /**
- * Super Admin — All Schools: DT theme, no shadows, search, filter chips, PulsingFAB.
+ * Super Admin — All Schools: light theme (T tokens), search, filter chips, FAB.
  */
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, Switch, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft, Search, Building2, ChevronRight, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSuperAdminAccent } from '../../hooks/useSuperAdminAccent';
-import { DarkHeader, Pressable3D, PulsingFAB, DarkButton } from '../../components/ui';
-import { DT } from '../../constants/darkTheme';
+import { T } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
+import { SuperAdminFloatingNav } from '../../components/ui/SuperAdminFloatingNav';
 
 interface SchoolRow {
   id: string;
@@ -22,7 +21,7 @@ interface SchoolRow {
 
 export default function SchoolManagementScreen() {
   const navigation = useNavigation<any>();
-  const { accent } = useSuperAdminAccent();
+  const insets = useSafeAreaInsets();
   const [schools, setSchools] = useState<SchoolRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,41 +64,71 @@ export default function SchoolManagementScreen() {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: DT.bg }} edges={['top']}>
-      <DarkHeader
-        title="All Schools"
-        showBack
-        onBackPress={() => {
-          if (navigation.canGoBack()) navigation.goBack();
-        }}
-        accent={accent}
-      />
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
+          >
+            <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Schools</Text>
+        </View>
+      </View>
 
-      <View style={{ paddingHorizontal: DT.px, marginTop: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: DT.card, borderRadius: DT.radius.md, height: 48, paddingHorizontal: 16 }}>
-          <Ionicons name="search-outline" size={20} color={DT.textMuted} style={{ marginRight: 10 }} />
+      <View style={{ paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: T.card,
+            borderRadius: T.radius.full,
+            height: 48,
+            paddingHorizontal: 16,
+            borderWidth: 1.5,
+            borderColor: T.inputBorder,
+            ...T.shadowSm,
+          }}
+        >
+          <Search size={20} color={T.textPlaceholder} strokeWidth={1.8} />
           <TextInput
-            style={{ flex: 1, fontSize: 16, color: DT.textPrimary, paddingVertical: 0 }}
+            style={{ flex: 1, fontSize: 16, color: T.textDark, paddingVertical: 0, marginLeft: 10 }}
             placeholder="Search schools"
-            placeholderTextColor={DT.textMuted}
+            placeholderTextColor={T.textPlaceholder}
             value={search}
             onChangeText={setSearch}
           />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12, marginBottom: 8 }} contentContainerStyle={{ paddingRight: 20 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }} contentContainerStyle={{ paddingRight: 8, gap: 8 }}>
           {(['all', 'active', 'inactive'] as const).map((f) => (
             <TouchableOpacity
               key={f}
               onPress={() => setFilter(f)}
+              activeOpacity={0.85}
               style={{
-                marginRight: 8,
                 paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: filter === f ? accent : DT.card,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: filter === f ? T.primary : T.card,
+                borderWidth: 1.5,
+                borderColor: filter === f ? T.primary : T.inputBorder,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...(filter === f ? T.shadowSm : {}),
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '700', color: filter === f ? '#1A1A1A' : DT.textSecondary }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: filter === f ? T.textWhite : T.textDark }}>
                 {f === 'all' ? 'All' : f === 'active' ? 'Active' : 'Inactive'}
               </Text>
             </TouchableOpacity>
@@ -109,81 +138,111 @@ export default function SchoolManagementScreen() {
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={accent} />
+          <ActivityIndicator size="large" color={T.primary} />
         </View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: DT.px, paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />}
+          contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140, paddingTop: 4 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: DT.card, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                <Ionicons name="business-outline" size={32} color={DT.textMuted} />
+              <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: T.primaryLight, borderWidth: 1.5, borderColor: T.inputBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Building2 size={34} color={T.primary} strokeWidth={1.8} />
               </View>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: DT.textPrimary }}>No schools yet</Text>
-              <Text style={{ fontSize: 13, color: DT.textMuted, fontStyle: 'italic', marginTop: 4 }}>Create your first school to get started</Text>
-              <View style={{ marginTop: 16 }}>
-                <DarkButton label="Add First School" variant="accent" icon="add" iconPosition="left" accent={accent} onPress={() => navigation.navigate('CreateSchool')} fullWidth={false} />
-              </View>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: T.textDark }}>No schools yet</Text>
+              <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, textAlign: 'center' }}>Create your first school to get started</Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('CreateSchool')}
+                style={{
+                  marginTop: 16,
+                  backgroundColor: T.primary,
+                  borderRadius: T.radius.full,
+                  paddingHorizontal: 18,
+                  height: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  ...T.shadowSm,
+                }}
+              >
+                <Text style={{ color: T.textWhite, fontWeight: '800' }}>Add First School</Text>
+              </TouchableOpacity>
             </View>
           }
           renderItem={({ item }) => (
-            <Pressable3D onPress={() => navigation.navigate('SchoolDetail', { schoolId: item.id })} style={{ marginBottom: 12 }}>
-              <View
-                style={{
-                  backgroundColor: DT.card,
-                  borderRadius: DT.radius.lg,
-                  padding: 16,
-                  borderLeftWidth: 3,
-                  borderLeftColor: accent,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: DT.textPrimary, flex: 1 }}>{item.name}</Text>
-                  <View
-                    style={{
-                      backgroundColor: item.isActive ? accent + '20' : 'rgba(51,51,51,0.5)',
-                      borderWidth: item.isActive ? 1 : 0,
-                      borderColor: item.isActive ? accent : 'transparent',
-                      borderRadius: 12,
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: item.isActive ? accent : DT.textSecondary }}>{item.isActive ? 'Active' : 'Inactive'}</Text>
+            <TouchableOpacity activeOpacity={0.85} onPress={() => navigation.navigate('SchoolDetail', { schoolId: item.id })} style={{ marginBottom: 12 }}>
+              <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, ...T.shadowSm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 16 }}>{item.name?.charAt(0) ?? 'S'}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '800', color: T.textDark }} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: T.textMuted, marginTop: 4, fontVariant: ['tabular-nums'] }} numberOfLines={1}>
+                        {item.schoolCode ?? '—'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <View style={{ backgroundColor: item.isActive ? T.successTint : T.dangerTint, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: item.isActive ? T.success : T.danger }}>
+                        {item.isActive ? 'Active' : 'Inactive'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ fontSize: 12, color: accent, fontStyle: 'italic', fontVariant: ['tabular-nums'] }}>{item.schoolCode ?? '—'}</Text>
-                  <Text style={{ fontSize: 12, color: DT.textMuted, marginLeft: 8 }}>{item._count?.users ?? 0} users</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 12, color: DT.textMuted, fontStyle: 'italic' }}>{item._count?.registrationRequests ?? 0} requests</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 12, color: T.textMuted }}>{item._count?.users ?? 0} users</Text>
+                    <Text style={{ fontSize: 12, color: T.textMuted }}>{item._count?.registrationRequests ?? 0} requests</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Switch
                       value={item.isActive}
                       onValueChange={(v) => toggleStatus(item.id, v)}
-                      trackColor={{ false: DT.border, true: accent }}
+                      trackColor={{ false: T.inputBorder, true: T.primary }}
                       thumbColor="#FFFFFF"
                     />
-                    <Text style={{ color: DT.textSecondary, fontSize: 13, marginLeft: 8 }}>{item.isActive ? 'Active' : 'Inactive'}</Text>
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('SchoolDetail', { schoolId: item.id })}
-                      style={{ backgroundColor: accent + '20', borderRadius: 10, padding: 8, marginLeft: 8 }}
-                    >
-                      <Ionicons name="chevron-forward" size={16} color={accent} />
-                    </TouchableOpacity>
+                    <ChevronRight size={18} color={T.textPlaceholder} strokeWidth={1.8} />
                   </View>
                 </View>
               </View>
-            </Pressable3D>
+            </TouchableOpacity>
           )}
         />
       )}
 
-      <PulsingFAB accent={accent} onPress={() => navigation.navigate('CreateSchool')} />
+      <TouchableOpacity
+        onPress={() => navigation.navigate('CreateSchool')}
+        activeOpacity={0.85}
+        style={{
+          position: 'absolute',
+          bottom: insets.bottom + 90,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: T.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999,
+          elevation: 10,
+          shadowColor: T.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        }}
+      >
+        <Plus size={24} color={T.textWhite} strokeWidth={1.8} />
+      </TouchableOpacity>
+
+      <SuperAdminFloatingNav navigation={navigation} activeTab="SchoolManagement" />
     </SafeAreaView>
   );
 }

@@ -13,17 +13,18 @@ import {
   Modal,
   Alert,
   Pressable,
+  TouchableOpacity,
   ScrollView as RNScrollView,
   Share,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, ChevronLeft, Search, School, Download, Megaphone, Plus, Users } from 'lucide-react-native';
+import { ChevronLeft, Search, School, Download, Megaphone, Plus, Users } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useAccentColor } from '../../hooks/useAccentColor';
-import { LightHeader, LightButton, Pressable3D } from '../../components/ui';
+import { LightButton, Pressable3D } from '../../components/ui';
 import { T } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
 
@@ -60,9 +61,7 @@ const STATUS_FILTERS = ['All', 'Paid', 'Pending', 'Overdue'];
 
 export default function FeeReportScreen() {
   const navigation = useNavigation<any>();
-  const accent = useAccentColor();
   const insets = useSafeAreaInsets();
-  const canGoBack = navigation.canGoBack?.() ?? false;
   const [data, setData] = useState<FeeManagementData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -108,10 +107,6 @@ export default function FeeReportScreen() {
   const summary = data?.summary ?? { totalDue: 0, totalPaid: 0, totalOverdue: 0, totalStudents: 0 };
   const total = summary.totalPaid + summary.totalDue;
   const collectionPct = total > 0 ? Math.round((summary.totalPaid / total) * 100) : 0;
-
-  const paidCount = data?.byClass?.reduce((s, c) => s + c.students.reduce((t, st) => t + st.fees.filter((f) => f.status === 'PAID').length, 0), 0) ?? 0;
-  const pendingCount = data?.byClass?.reduce((s, c) => s + c.students.reduce((t, st) => t + st.fees.filter((f) => f.status === 'PENDING').length, 0), 0) ?? 0;
-  const overdueCount = data?.byClass?.reduce((s, c) => s + c.students.reduce((t, st) => t + st.fees.filter((f) => f.status === 'OVERDUE').length, 0), 0) ?? 0;
 
   const handleMarkStatus = async (feeId: string, status: 'PAID' | 'PENDING' | 'OVERDUE') => {
     setUpdatingFeeId(feeId);
@@ -215,30 +210,29 @@ export default function FeeReportScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
-      {/* Flat header (Parent-style) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Pressable
-            onPress={() => (canGoBack ? navigation.goBack() : null)}
-            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
           >
             <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
-          </Pressable>
-          <Text style={{ ...T.font.appTitle, color: T.textDark, flex: 1, textAlign: 'center' }}>Fee Management</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('Notifications');
-                } catch (_e) {}
-              }}
-            >
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </Pressable>
-            <View style={{ width: 44, height: 44 }} />
-          </View>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Fee Report</Text>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }}>
+          {summary.totalStudents} students · {collectionPct}% collected
+        </Text>
       </View>
 
       <ScrollView
@@ -248,20 +242,22 @@ export default function FeeReportScreen() {
       >
         {/* Summary */}
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
-          <Text style={{ color: T.textDark, fontSize: 18, fontWeight: '900' }}>Fee Overview</Text>
-          <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 2 }}>this academic year</Text>
+          <Text style={{ color: T.textDark, fontSize: 17, fontWeight: '800' }}>Summary</Text>
+          <Text style={{ color: T.textMuted, fontSize: 13, marginTop: 2 }}>This academic year</Text>
           <View style={{ flexDirection: 'row', marginTop: 16, marginHorizontal: -4 }}>
-            <View style={{ flex: 1, backgroundColor: T.primaryLight, borderRadius: 14, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
-              <Text style={{ color: T.success, fontSize: 22, fontWeight: '900' }}>{data?.byClass?.flatMap((c) => c.students).filter((s) => s.fees.some((f) => f.status === 'PAID')).length ?? 0}</Text>
-              <Text style={{ color: T.textMuted, fontSize: 11, fontStyle: 'italic' }}>Paid</Text>
+            <View style={{ flex: 1, backgroundColor: T.successTint, borderRadius: T.radius.lg, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
+              <Text style={{ color: T.success, fontSize: 18, fontWeight: '900' }}>₹{(summary.totalPaid ?? 0).toLocaleString()}</Text>
+              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', marginTop: 4 }}>Collected</Text>
             </View>
-            <View style={{ flex: 1, backgroundColor: T.primaryLight, borderRadius: 14, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
-              <Text style={{ color: T.warning, fontSize: 22, fontWeight: '900' }}>{pendingCount}</Text>
-              <Text style={{ color: T.textMuted, fontSize: 11, fontStyle: 'italic' }}>Pending</Text>
+            <View style={{ flex: 1, backgroundColor: T.warningTint, borderRadius: T.radius.lg, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
+              <Text style={{ color: T.warning, fontSize: 18, fontWeight: '900' }}>
+                ₹{Math.max(0, (summary.totalDue ?? 0) - (summary.totalOverdue ?? 0)).toLocaleString()}
+              </Text>
+              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', marginTop: 4 }}>Pending</Text>
             </View>
-            <View style={{ flex: 1, backgroundColor: T.primaryLight, borderRadius: 14, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
-              <Text style={{ color: T.danger, fontSize: 22, fontWeight: '900' }}>{overdueCount}</Text>
-              <Text style={{ color: T.textMuted, fontSize: 11, fontStyle: 'italic' }}>Overdue</Text>
+            <View style={{ flex: 1, backgroundColor: T.dangerTint, borderRadius: T.radius.lg, padding: 12, marginHorizontal: 4, borderWidth: 1.5, borderColor: T.inputBorder }}>
+              <Text style={{ color: T.danger, fontSize: 18, fontWeight: '900' }}>₹{(summary.totalOverdue ?? 0).toLocaleString()}</Text>
+              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700', marginTop: 4 }}>Overdue</Text>
             </View>
           </View>
           <View style={{ height: 6, backgroundColor: T.primaryTint, borderRadius: 3, marginTop: 12, overflow: 'hidden' }}>
@@ -329,7 +325,7 @@ export default function FeeReportScreen() {
                   <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, marginBottom: 8, ...T.shadowSm }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>{(st.studentName || '?').slice(0, 2).toUpperCase()}</Text>
+                        <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 14 }}>{(st.studentName || '?').slice(0, 2).toUpperCase()}</Text>
                       </View>
                       <View style={{ flex: 1, marginLeft: 12 }}>
                         <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>{st.studentName}</Text>
@@ -438,6 +434,8 @@ export default function FeeReportScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <AdminFloatingNav navigation={navigation} activeTab="FeeReport" />
     </SafeAreaView>
   );
 }

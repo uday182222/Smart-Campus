@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { adminController } from '../controllers/admin.controller';
+import { attendanceController } from '../controllers/attendance.controller';
 import { handleSingleFileUpload } from '../middleware/s3Upload';
 
 const router = Router();
@@ -20,6 +21,13 @@ router.get(
   '/reports/attendance',
   authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'),
   adminController.getAttendanceReport
+);
+
+// GET /api/admin/attendance/:classId/:date - View attendance for a class on a date
+router.get(
+  '/attendance/:classId/:date',
+  authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'),
+  attendanceController.getClassAttendance
 );
 
 // GET /api/admin/reports/fees

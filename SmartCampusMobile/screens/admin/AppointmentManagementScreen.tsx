@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Bell,
+  ChevronLeft,
   Search,
   CalendarClock,
   Clock,
@@ -34,6 +34,7 @@ import {
   Minus,
 } from 'lucide-react-native';
 import { T } from '../../constants/theme';
+import { useNavigation } from '@react-navigation/native';
 
 // Components
 import AppointmentDetailsModal from '../../components/appointment/AppointmentDetailsModal';
@@ -87,6 +88,7 @@ interface AvailabilitySlot {
 }
 
 const AppointmentManagementScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const [appointments, setAppointments] = useState<AppointmentRequest[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<AppointmentRequest[]>([]);
@@ -284,25 +286,37 @@ const AppointmentManagementScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }}>Admin</Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Appointment Management</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}>
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <TouchableOpacity
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={handleAvailabilityPress}
+              onPress={() => {
+                if (navigation.canGoBack()) navigation.goBack();
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...T.shadowSm,
+              }}
             >
-              <CalendarClock size={20} color={T.textWhite} strokeWidth={1.8} />
+              <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Appointments</Text>
           </View>
+          <TouchableOpacity
+            style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
+            onPress={handleAvailabilityPress}
+          >
+            <CalendarClock size={20} color={T.textWhite} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }}>
+          {getPendingCount()} pending · {getUrgentCount()} urgent
+        </Text>
       </View>
 
       {/* Search and Filters */}

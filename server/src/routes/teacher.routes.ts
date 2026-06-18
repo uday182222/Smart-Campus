@@ -11,6 +11,7 @@ router.get('/dashboard', teacherController.getTeacherDashboard);
 router.get('/classes', teacherController.getMyClasses);
 router.get('/classes/:classId/students', teacherController.getClassStudents);
 router.get('/parents', teacherController.getParents);
+router.get('/students-for-messaging', teacherController.getStudentsForMessaging);
 router.get('/messages', teacherController.getMessages);
 router.post('/messages', teacherController.sendMessage);
 router.get('/calendar', teacherController.getCalendarEvents);

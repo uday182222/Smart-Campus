@@ -5,7 +5,7 @@ import { bushelperController } from '../controllers/bushelper.controller';
 const router = Router();
 
 router.use(authMiddleware.authenticate);
-router.use(authMiddleware.authorize('BUS_HELPER', 'ADMIN', 'SUPER_ADMIN'));
+router.use(authMiddleware.authorize('BUS_HELPER', 'ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'));
 
 router.get('/routes', bushelperController.getAssignedRoutes);
 router.get('/routes/:routeId', bushelperController.getRouteDetail);

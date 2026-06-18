@@ -54,9 +54,13 @@ export default function MessagesScreen() {
   const [sending, setSending] = useState(false);
   const [parents, setParents] = useState<any[]>([]);
   const [parentsLoading, setParentsLoading] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [recipientTab, setRecipientTab] = useState<'parents' | 'students'>('parents');
   const [showParentPicker, setShowParentPicker] = useState(false);
   const [parentSearch, setParentSearch] = useState('');
   const [selectedParent, setSelectedParent] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -102,6 +106,24 @@ export default function MessagesScreen() {
   useEffect(() => {
     loadParents();
   }, [loadParents]);
+
+  const loadStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      const res = await API.get('/teacher/students-for-messaging');
+      const data = (res as any)?.data ?? res;
+      const list = Array.isArray(data) ? data : data?.data ?? [];
+      setStudents(Array.isArray(list) ? list : []);
+    } catch (_e) {
+      setStudents([]);
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
 
   useEffect(() => {
     if (!preSelectedToUserId || parents.length === 0) return;
@@ -166,6 +188,23 @@ export default function MessagesScreen() {
     });
   }, [parents, parentSearch]);
 
+  const filteredStudents = useMemo(() => {
+    const q = parentSearch.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter((s) => {
+      const name = String(s?.name ?? '').toLowerCase();
+      const className = String(s?.className ?? '').toLowerCase();
+      const parentName = String(s?.parentName ?? '').toLowerCase();
+      return name.includes(q) || className.includes(q) || parentName.includes(q);
+    });
+  }, [students, parentSearch]);
+
+  const recipientLabel = selectedStudent
+    ? `${selectedStudent.name} (${selectedStudent.className})`
+    : selectedParent
+      ? `${selectedParent.name} (${selectedParent.studentName})`
+      : 'Select recipient...';
+
   const header = (
     <>
       <LinearGradient colors={[primary, primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
@@ -208,24 +247,24 @@ export default function MessagesScreen() {
               borderRadius: 14,
               backgroundColor: '#FFFFFF',
               borderWidth: 1,
-              borderColor: selectedParent ? primary : TD.cardBorder,
+              borderColor: selectedParent || selectedStudent ? primary : TD.cardBorder,
               paddingHorizontal: 14,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 10,
             }}
           >
-            <Ionicons name="people-outline" size={20} color={selectedParent ? primary : TD.textMuted} />
+            <Ionicons name="people-outline" size={20} color={selectedParent || selectedStudent ? primary : TD.textMuted} />
             <Text
               numberOfLines={1}
               style={{
                 flex: 1,
-                color: selectedParent ? TD.textDark : TD.textMuted,
-                fontWeight: selectedParent ? '800' : '600',
+                color: selectedParent || selectedStudent ? TD.textDark : TD.textMuted,
+                fontWeight: selectedParent || selectedStudent ? '800' : '600',
                 fontSize: 14,
               }}
             >
-              {selectedParent ? `${selectedParent.name} (${selectedParent.studentName})` : 'Select parent...'}
+              {recipientLabel}
             </Text>
             <Ionicons name="chevron-down" size={18} color={TD.textMuted} />
           </TouchableOpacity>
@@ -266,11 +305,35 @@ export default function MessagesScreen() {
           </View>
 
           <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
-            <Text style={{ color: TD.textDark, fontWeight: '900', fontSize: 18 }}>Select Parent</Text>
+            <Text style={{ color: TD.textDark, fontWeight: '900', fontSize: 18 }}>Select Recipient</Text>
+            <View style={{ flexDirection: 'row', marginTop: 12, gap: 8 }}>
+              {(['parents', 'students'] as const).map((tab) => {
+                const active = recipientTab === tab;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    onPress={() => setRecipientTab(tab)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      backgroundColor: active ? primaryLight : '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: active ? primary : TD.cardBorder,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: active ? primary : TD.textMuted, fontWeight: '800', fontSize: 13 }}>
+                      {tab === 'parents' ? 'Parents' : 'Students'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <View style={{ marginTop: 12, borderWidth: 1, borderColor: TD.cardBorder, borderRadius: 14, paddingHorizontal: 12, height: 46, flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="search" size={18} color={TD.textMuted} />
               <TextInput
-                placeholder="Search by parent or student..."
+                placeholder={recipientTab === 'parents' ? 'Search by parent or student...' : 'Search by student, class, or parent...'}
                 placeholderTextColor={TD.textMuted}
                 value={parentSearch}
                 onChangeText={setParentSearch}
@@ -284,12 +347,14 @@ export default function MessagesScreen() {
             </View>
           </View>
 
-          {parentsLoading ? (
+          {(recipientTab === 'parents' ? parentsLoading : studentsLoading) ? (
             <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator color={primary} />
-              <Text style={{ marginTop: 10, color: TD.textMuted, fontSize: 13 }}>Loading parents…</Text>
+              <Text style={{ marginTop: 10, color: TD.textMuted, fontSize: 13 }}>
+                {recipientTab === 'parents' ? 'Loading parents…' : 'Loading students…'}
+              </Text>
             </View>
-          ) : (
+          ) : recipientTab === 'parents' ? (
             <FlatList
               data={filteredParents}
               keyExtractor={(item, idx) => `${item?.id ?? 'p'}:${item?.studentId ?? idx}`}
@@ -300,6 +365,7 @@ export default function MessagesScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       setSelectedParent(item);
+                      setSelectedStudent(null);
                       setToUserId(String(item?.id ?? ''));
                       setShowParentPicker(false);
                     }}
@@ -334,6 +400,55 @@ export default function MessagesScreen() {
               ListEmptyComponent={
                 <View style={{ paddingVertical: 24, alignItems: 'center' }}>
                   <Text style={{ color: TD.textMuted, fontSize: 13 }}>No parents found.</Text>
+                </View>
+              }
+            />
+          ) : (
+            <FlatList
+              data={filteredStudents}
+              keyExtractor={(item) => String(item?.id ?? item?.userId)}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 }}
+              renderItem={({ item }) => {
+                const isActive = selectedStudent?.id === item?.id;
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedStudent(item);
+                      setSelectedParent(null);
+                      setToUserId(String(item?.userId ?? item?.id ?? ''));
+                      setShowParentPicker(false);
+                    }}
+                    activeOpacity={0.85}
+                    style={{
+                      backgroundColor: isActive ? primaryLight : '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: isActive ? primary : TD.cardBorder,
+                      borderRadius: 14,
+                      padding: 14,
+                      marginBottom: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#FFFFFF', fontWeight: '900' }}>{getInitials(String(item?.name ?? 'S'))}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: TD.textDark, fontWeight: '900', fontSize: 14 }} numberOfLines={1}>
+                        {item?.name ?? 'Student'}
+                      </Text>
+                      <Text style={{ color: TD.textMuted, fontSize: 12, marginTop: 4 }} numberOfLines={1}>
+                        {item?.className ?? '—'} · Parent: {item?.parentName ?? '—'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={TD.textMuted} />
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                  <Text style={{ color: TD.textMuted, fontSize: 13 }}>No students found.</Text>
                 </View>
               }
             />

@@ -18,7 +18,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Bell,
   ChevronLeft,
   ChevronRight,
   Calendar,
@@ -28,24 +27,32 @@ import {
   Users,
   AlarmClock,
   FilePenLine,
+  Plus,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LightButton, Pressable3D } from '../../components/ui';
 import { apiClient } from '../../services/apiClient';
-import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { T } from '../../constants/theme';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CELL_SIZE = SCREEN_WIDTH / 7 - 4;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const EVENT_TYPES = ['HOLIDAY', 'EXAM', 'MEETING', 'EVENT', 'REMINDER'] as const;
-const TYPE_COLORS: Record<string, string> = {
-  HOLIDAY: '#EF4444',
-  EXAM: '#3B82F6',
-  MEETING: '#A855F7',
-  EVENT: '#2B5CE6', // accent
-  REMINDER: '#F59E0B',
-};
+function typeAccent(type: string): string {
+  switch (type) {
+    case 'HOLIDAY':
+      return T.danger;
+    case 'EXAM':
+      return T.primary;
+    case 'MEETING':
+      return T.warning;
+    case 'REMINDER':
+      return T.warning;
+    default:
+      return T.primary;
+  }
+}
 
 interface SchoolEventRow {
   id: string;
@@ -59,9 +66,6 @@ interface SchoolEventRow {
 
 export default function EventsScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useSchoolTheme();
-  const accent = T.primary;
-  const primaryLight = T.primaryLight;
   const insets = useSafeAreaInsets();
   const [viewMonth, setViewMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -148,7 +152,7 @@ export default function EventsScreen() {
       date: new Date(ev.date + 'T12:00:00'),
       endDate: ev.endDate ? new Date(ev.endDate + 'T12:00:00') : null,
       multiDay: !!ev.endDate,
-      type: (ev.type in TYPE_COLORS ? ev.type : 'EVENT') as (typeof EVENT_TYPES)[number],
+      type: ((EVENT_TYPES as readonly string[]).includes(ev.type) ? ev.type : 'EVENT') as (typeof EVENT_TYPES)[number],
     });
     setModalVisible(true);
   };
@@ -208,38 +212,29 @@ export default function EventsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
-      {/* Header (flat) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }} numberOfLines={1}>
-              {theme.schoolName || 'Admin'}
-            </Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>School Events</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('Notifications');
-                } catch (_e) {}
-              }}
-            >
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('AdminProfile');
-                } catch (_e) {}
-              }}
-            >
-              <Text style={{ color: T.textWhite, fontWeight: '900' }}>{(theme.schoolName || 'A').charAt(0).toUpperCase()}</Text>
-            </TouchableOpacity>
-          </View>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
+          >
+            <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Events</Text>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }} numberOfLines={1}>
+          {monthLabel}
+        </Text>
 
         <View
           style={{
@@ -287,7 +282,7 @@ export default function EventsScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Calendar grid */}
@@ -313,10 +308,7 @@ export default function EventsScreen() {
                     return same || inRange;
                   })
                 : [];
-              const typeColor =
-                evsOnDay.length > 0
-                  ? TYPE_COLORS[evsOnDay[0].type] ?? accent
-                  : 'transparent';
+              const dotColor = evsOnDay.length > 0 ? T.primary : 'transparent';
               return (
                 <TouchableOpacity
                   key={i}
@@ -337,7 +329,7 @@ export default function EventsScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: isSelected(cell.date)
-                        ? primaryLight
+                        ? T.primaryLight
                         : isToday(cell.date)
                           ? T.primary
                           : hasEvents(cell.date)
@@ -368,7 +360,7 @@ export default function EventsScreen() {
                               width: 4,
                               height: 4,
                               borderRadius: 2,
-                              backgroundColor: typeColor,
+                              backgroundColor: dotColor,
                               marginTop: 2,
                             }}
                           />
@@ -419,7 +411,7 @@ export default function EventsScreen() {
           </View>
         ) : (
           selectedDayEvents.map((ev) => {
-            const typeColor = TYPE_COLORS[ev.type] ?? accent;
+            const accent = typeAccent(ev.type);
             return (
               <Pressable3D key={ev.id}>
                 <View
@@ -430,7 +422,7 @@ export default function EventsScreen() {
                     marginBottom: 8,
                     marginTop: 8,
                     borderLeftWidth: 4,
-                    borderLeftColor: typeColor,
+                    borderLeftColor: T.primary,
                     flexDirection: 'row',
                     alignItems: 'flex-start',
                     borderWidth: 1.5,
@@ -443,16 +435,16 @@ export default function EventsScreen() {
                       width: 36,
                       height: 36,
                       borderRadius: 10,
-                      backgroundColor: typeColor + '20',
+                      backgroundColor: T.primaryLight,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    {ev.type === 'HOLIDAY' ? <Calendar size={18} color={typeColor} strokeWidth={1.8} /> : null}
-                    {ev.type === 'EXAM' ? <FilePenLine size={18} color={typeColor} strokeWidth={1.8} /> : null}
-                    {ev.type === 'MEETING' ? <Users size={18} color={typeColor} strokeWidth={1.8} /> : null}
-                    {ev.type === 'EVENT' ? <Star size={18} color={typeColor} strokeWidth={1.8} /> : null}
-                    {ev.type === 'REMINDER' ? <AlarmClock size={18} color={typeColor} strokeWidth={1.8} /> : null}
+                    {ev.type === 'HOLIDAY' ? <Calendar size={18} color={accent} strokeWidth={1.8} /> : null}
+                    {ev.type === 'EXAM' ? <FilePenLine size={18} color={accent} strokeWidth={1.8} /> : null}
+                    {ev.type === 'MEETING' ? <Users size={18} color={accent} strokeWidth={1.8} /> : null}
+                    {ev.type === 'EVENT' ? <Star size={18} color={accent} strokeWidth={1.8} /> : null}
+                    {ev.type === 'REMINDER' ? <AlarmClock size={18} color={accent} strokeWidth={1.8} /> : null}
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>
@@ -461,14 +453,14 @@ export default function EventsScreen() {
                     <View
                       style={{
                         alignSelf: 'flex-start',
-                        backgroundColor: typeColor + '26',
+                        backgroundColor: T.primaryLight,
                         paddingHorizontal: 8,
                         paddingVertical: 4,
-                        borderRadius: 8,
+                        borderRadius: 999,
                         marginTop: 4,
                       }}
                     >
-                      <Text style={{ color: typeColor, fontSize: 11, fontWeight: '900' }}>
+                      <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>
                         {ev.type}
                       </Text>
                     </View>
@@ -534,7 +526,7 @@ export default function EventsScreen() {
                   width: 40,
                   height: 4,
                   borderRadius: 2,
-                  backgroundColor: '#E2E8F0',
+                  backgroundColor: T.inputBorder,
                   alignSelf: 'center',
                   marginBottom: 20,
                 }}
@@ -639,16 +631,16 @@ export default function EventsScreen() {
                       endDate: v ? new Date(f.date) : null,
                     }))
                   }
-                  trackColor={{ false: '#E2E8F0', true: accent }}
-                  thumbColor="#FFFFFF"
+                  trackColor={{ false: T.inputBorder, true: T.primary }}
+                  thumbColor={T.textWhite}
                 />
-                <Text style={{ color: '#94A3B8', fontSize: 14, marginLeft: 8 }}>
+                <Text style={{ color: T.textPlaceholder, fontSize: 14, marginLeft: 8 }}>
                   Multi-day event?
                 </Text>
               </View>
               {form.multiDay && (
                 <>
-                  <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8, textTransform: 'uppercase' }}>
+                  <Text style={{ color: T.textPlaceholder, fontSize: 12, marginTop: 8, textTransform: 'uppercase' }}>
                     End date
                   </Text>
                   <TouchableOpacity
@@ -692,31 +684,31 @@ export default function EventsScreen() {
                 </>
               )}
 
-              <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 12, textTransform: 'uppercase' }}>
+              <Text style={{ color: T.textPlaceholder, fontSize: 12, marginTop: 12, textTransform: 'uppercase' }}>
                 Type
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 8 }}>
                 {EVENT_TYPES.map((t) => {
                   const active = form.type === t;
-                  const typeColor = TYPE_COLORS[t] ?? accent;
+                  const chipAccent = typeAccent(t);
                   return (
                     <TouchableOpacity
                       key={t}
                       onPress={() => setForm((f) => ({ ...f, type: t }))}
                       style={{
-                        backgroundColor: active ? typeColor + '28' : T.card,
+                        backgroundColor: active ? T.primaryLight : T.card,
                         paddingHorizontal: 12,
                         height: 36,
                         borderRadius: 18,
                         borderWidth: 1.5,
-                        borderColor: active ? typeColor : T.inputBorder,
+                        borderColor: active ? chipAccent : T.inputBorder,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
                       <Text
                         style={{
-                          color: active ? typeColor : T.textMuted,
+                          color: active ? chipAccent : T.textMuted,
                           fontWeight: active ? '900' : '700',
                           fontSize: 12,
                         }}
@@ -741,6 +733,31 @@ export default function EventsScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      <TouchableOpacity
+        onPress={openAdd}
+        style={{
+          position: 'absolute',
+          bottom: 100,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: T.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999,
+          elevation: 10,
+          shadowColor: T.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        }}
+      >
+        <Plus size={24} color={T.textWhite} strokeWidth={1.8} />
+      </TouchableOpacity>
+
+      <AdminFloatingNav navigation={navigation} activeTab="Events" />
     </View>
   );
 }

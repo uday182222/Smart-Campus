@@ -3,14 +3,14 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert, Pressable, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Megaphone, Send } from 'lucide-react-native';
+import { Megaphone, ChevronLeft, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton, LightInput } from '../../components/ui';
 import { T } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
 const TARGET_OPTIONS = ['All', 'Teachers', 'Parents', 'Students', 'Bus Helpers'];
@@ -39,10 +39,8 @@ function formatTimeAgo(dateStr: string): string {
 
 export default function AnnouncementsScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useSchoolTheme();
-  const primary = T.primary;
-  const primaryTint = T.primaryLight;
   const insets = useSafeAreaInsets();
+  const scrollRef = React.useRef<ScrollView>(null);
 
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
@@ -109,44 +107,36 @@ export default function AnnouncementsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
-      {/* Header (flat) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }} numberOfLines={1}>
-              {theme.schoolName || 'Admin'}
-            </Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Announcements</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('Notifications');
-                } catch (_e) {}
-              }}
-            >
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </Pressable>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('AdminProfile');
-                } catch (_e) {}
-              }}
-            >
-              <Text style={{ color: T.textWhite, fontWeight: '900' }}>{(theme.schoolName || 'A').charAt(0).toUpperCase()}</Text>
-            </Pressable>
-          </View>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
+          >
+            <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Announcements</Text>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }}>
+          {list.length} in history
+        </Text>
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadList(); }} tintColor={primary} />}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadList(); }} tintColor={T.primary} />}
       >
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -175,11 +165,11 @@ export default function AnnouncementsScreen() {
                 onPress={() => toggleTarget(opt)}
                 style={{
                   height: 36,
-                  backgroundColor: targetRoles.includes(opt) ? primary : T.card,
+                  backgroundColor: targetRoles.includes(opt) ? T.primary : T.card,
                   paddingHorizontal: 14,
                   borderRadius: 18,
                   borderWidth: 1.5,
-                  borderColor: targetRoles.includes(opt) ? primary : T.inputBorder,
+                  borderColor: targetRoles.includes(opt) ? T.primary : T.inputBorder,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -220,7 +210,7 @@ export default function AnnouncementsScreen() {
                   <View
                     key={String(a)}
                     style={{
-                      backgroundColor: primaryTint,
+                      backgroundColor: T.primaryLight,
                       borderRadius: 999,
                       paddingHorizontal: 10,
                       paddingVertical: 6,
@@ -230,15 +220,40 @@ export default function AnnouncementsScreen() {
                       borderColor: T.inputBorder,
                     }}
                   >
-                    <Text style={{ color: primary, fontSize: 11, fontWeight: '900' }}>{a}</Text>
+                    <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>{a}</Text>
                   </View>
                 ))}
-                <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginLeft: 'auto' }}>{formatTimeAgo(item.createdAt)}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 12, marginLeft: 'auto' }}>{formatTimeAgo(item.createdAt)}</Text>
               </View>
             </View>
           ))
         )}
       </ScrollView>
+
+      <TouchableOpacity
+        onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+        style={{
+          position: 'absolute',
+          bottom: 100,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: T.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999,
+          elevation: 10,
+          shadowColor: T.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+        }}
+      >
+        <Plus size={24} color={T.textWhite} strokeWidth={1.8} />
+      </TouchableOpacity>
+
+      <AdminFloatingNav navigation={navigation} activeTab="Announcements" />
     </View>
   );
 }

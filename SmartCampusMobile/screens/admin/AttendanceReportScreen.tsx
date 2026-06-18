@@ -3,13 +3,13 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, RefreshControl, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Modal, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Filter, ChevronDown, Calendar } from 'lucide-react-native';
+import { Filter, ChevronDown, Calendar, ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { apiClient } from '../../services/apiClient';
 import { T } from '../../constants/theme';
+import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
 const PRESETS = [
@@ -28,8 +28,6 @@ interface DayRow {
 
 export default function AttendanceReportScreen() {
   const navigation = useNavigation<any>();
-  const { theme } = useSchoolTheme();
-  const primary = T.primary;
   const insets = useSafeAreaInsets();
 
   const [presetIndex, setPresetIndex] = useState(0);
@@ -115,40 +113,31 @@ export default function AttendanceReportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
-      {/* Header (flat) */}
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...T.font.appTitle, color: T.textDark }} numberOfLines={1}>
-              {theme.schoolName || 'Admin'}
-            </Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>Attendance Report</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('Notifications');
-                } catch (_e) {}
-              }}
-            >
-              <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </Pressable>
-            <Pressable
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center', ...T.shadowSm }}
-              onPress={() => {
-                try {
-                  navigation.navigate('AdminProfile');
-                } catch (_e) {}
-              }}
-            >
-              <Text style={{ color: T.textWhite, fontWeight: '900' }}>{(theme.schoolName || 'A').charAt(0).toUpperCase()}</Text>
-            </Pressable>
-          </View>
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...T.shadowSm,
+            }}
+          >
+            <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: T.textDark }}>Attendance Report</Text>
         </View>
+        <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6, marginLeft: 56 }} numberOfLines={1}>
+          {PRESETS[presetIndex].label} · {selectedClassName}
+        </Text>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ marginTop: 12, paddingRight: 8, gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ marginTop: 14, paddingRight: 8, gap: 8 }}>
           {PRESETS.map((p, i) => (
             <Pressable
               key={p.label}
@@ -157,15 +146,15 @@ export default function AttendanceReportScreen() {
                 height: 36,
                 paddingHorizontal: 16,
                 borderRadius: 18,
-                backgroundColor: presetIndex === i ? primary : T.card,
+                backgroundColor: presetIndex === i ? T.primary : T.card,
                 borderWidth: 1.5,
-                borderColor: presetIndex === i ? primary : T.inputBorder,
+                borderColor: presetIndex === i ? T.primary : T.inputBorder,
                 alignItems: 'center',
                 justifyContent: 'center',
-                ...T.shadowSm,
+                ...(presetIndex === i ? T.shadowSm : {}),
               }}
             >
-              <Text style={{ color: presetIndex === i ? T.textWhite : T.textDark, fontWeight: '900', fontSize: 13 }}>{p.label}</Text>
+              <Text style={{ color: presetIndex === i ? T.textWhite : T.textDark, fontWeight: '800', fontSize: 13 }}>{p.label}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -187,8 +176,8 @@ export default function AttendanceReportScreen() {
             ...T.shadowSm,
           }}
         >
-          <Filter size={18} color={primary} strokeWidth={1.8} />
-          <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 13 }}>{selectedClassName}</Text>
+          <Filter size={18} color={T.primary} strokeWidth={1.8} />
+          <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 13 }}>{selectedClassName}</Text>
           <ChevronDown size={18} color={T.textPlaceholder} strokeWidth={1.8} />
         </Pressable>
       </View>
@@ -196,19 +185,19 @@ export default function AttendanceReportScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
       >
         <View style={{ flexDirection: 'row', marginTop: 16, gap: 10 }}>
-          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
-            <Text style={{ color: primary, fontWeight: '900', fontSize: 30 }}>{avgPct}%</Text>
+          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
+            <Text style={{ color: T.primary, fontWeight: '900', fontSize: 28 }}>{avgPct}%</Text>
             <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 6, fontWeight: '800' }}>Average</Text>
           </View>
-          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
-            <Text style={{ color: T.success, fontWeight: '900', fontSize: 30 }}>{bestDay ? `${bestDay.percentage}%` : '—'}</Text>
+          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
+            <Text style={{ color: T.success, fontWeight: '900', fontSize: 28 }}>{bestDay ? `${bestDay.percentage}%` : '—'}</Text>
             <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 6, fontWeight: '800' }}>Best day</Text>
           </View>
-          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
-            <Text style={{ color: T.danger, fontWeight: '900', fontSize: 30 }}>{worstDay ? `${worstDay.percentage}%` : '—'}</Text>
+          <View style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.xl, padding: 16, alignItems: 'center', ...T.shadowSm }}>
+            <Text style={{ color: T.danger, fontWeight: '900', fontSize: 28 }}>{worstDay ? `${worstDay.percentage}%` : '—'}</Text>
             <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 6, fontWeight: '800' }}>Worst day</Text>
           </View>
         </View>
@@ -245,7 +234,7 @@ export default function AttendanceReportScreen() {
               key={row.date}
               style={{
                 backgroundColor: T.card,
-                borderRadius: T.radius.xxl,
+                borderRadius: T.radius.xl,
                 padding: 14,
                 marginTop: 8,
                 flexDirection: 'row',
@@ -255,14 +244,14 @@ export default function AttendanceReportScreen() {
               }}
             >
               <View>
-                <Text style={{ color: T.textDark, fontSize: 14, fontWeight: '900' }}>{row.date}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic' }}>
+                <Text style={{ color: T.textDark, fontSize: 14, fontWeight: '800' }}>{row.date}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 12 }}>
                   {new Date(row.date).toLocaleDateString('en-US', { weekday: 'long' })}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ color: primary, fontSize: 13, fontWeight: '800', marginRight: 10 }}>P {row.present}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 13, marginRight: 10 }}>A {row.absent}</Text>
+                <Text style={{ color: T.success, fontSize: 13, fontWeight: '800', marginRight: 10 }}>P {row.present}</Text>
+                <Text style={{ color: T.danger, fontSize: 13, fontWeight: '800', marginRight: 10 }}>A {row.absent}</Text>
                 <View
                   style={{
                     backgroundColor: badgeBgForPct(row.percentage),
@@ -315,6 +304,8 @@ export default function AttendanceReportScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <AdminFloatingNav navigation={navigation} activeTab="AttendanceReport" />
     </View>
   );
 }

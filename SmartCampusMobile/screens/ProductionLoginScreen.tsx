@@ -220,7 +220,15 @@ export default function ProductionLoginScreen() {
     setSchoolError('');
     try {
       const code = schoolCode.trim().toUpperCase();
+      if (__DEV__) {
+        console.log('🏫 School Verification URL:', apiClient.getBaseURL());
+        console.log('🏫 School Code:', code);
+        console.log('Calling school verification...');
+      }
       const payload = await apiClient.get(`/schools/code/${encodeURIComponent(code)}`);
+      if (__DEV__) {
+        console.log('School verification success:', payload);
+      }
       const schoolData = payload?.data ?? payload;
       if (!schoolData?.id) throw new Error('School not found');
       setSchool(schoolData);
@@ -245,6 +253,9 @@ export default function ProductionLoginScreen() {
         }).start();
       });
     } catch (e: any) {
+      if (__DEV__) {
+        console.error('School verification failed:', e);
+      }
       setSchoolError(e?.message || e?.response?.data?.message || 'Invalid school code. Please check and try again.');
     } finally {
       setSchoolLoading(false);

@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSuperAdminAccent } from '../../hooks/useSuperAdminAccent';
-import { DT } from '../../constants/darkTheme';
+import { T } from '../../constants/theme';
 
 export default function SuperAdminGateScreen() {
   const navigation = useNavigation<any>();
@@ -26,9 +26,9 @@ export default function SuperAdminGateScreen() {
   }, [navigation]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: DT.bg, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" color={DT.lime} />
-      <Text style={{ color: DT.textMuted, marginTop: 16, fontSize: 14 }}>Loading...</Text>
+    <View style={{ flex: 1, backgroundColor: T.bg, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color={T.primary} />
+      <Text style={{ color: T.textDark, marginTop: 16, fontSize: 14 }}>Loading...</Text>
     </View>
   );
 }

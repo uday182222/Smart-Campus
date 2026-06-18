@@ -13,10 +13,13 @@ import PendingRequestsScreen from '../screens/admin/PendingRequestsScreen';
 import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import ClassManagementScreen from '../screens/admin/ClassManagementScreen';
 import AttendanceReportScreen from '../screens/admin/AttendanceReportScreen';
+import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen';
 import FeeReportScreen from '../screens/admin/FeeReportScreen';
 import AnnouncementsScreen from '../screens/admin/AnnouncementsScreen';
 import SchoolProfileScreen from '../screens/admin/SchoolProfileScreen';
 import EventsScreen from '../screens/admin/EventsScreen';
+import TransportManagementScreen from '../screens/admin/TransportManagementScreen';
+import RouteDetailScreen from '../screens/transport/RouteDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
@@ -46,10 +49,13 @@ function AdminStack() {
         <Stack.Screen name="UserManagement" component={UserManagementScreen} />
         <Stack.Screen name="ClassManagement" component={ClassManagementScreen} />
         <Stack.Screen name="AttendanceReport" component={AttendanceReportScreen} />
+        <Stack.Screen name="AdminAttendance" component={AdminAttendanceScreen} />
         <Stack.Screen name="FeeReport" component={FeeReportScreen} />
         <Stack.Screen name="Announcements" component={AnnouncementsScreen} />
         <Stack.Screen name="SchoolProfile" component={SchoolProfileScreen} />
         <Stack.Screen name="Events" component={EventsScreen} />
+        <Stack.Screen name="TransportManagement" component={TransportManagementScreen} />
+        <Stack.Screen name="RouteDetailScreen" component={RouteDetailScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>

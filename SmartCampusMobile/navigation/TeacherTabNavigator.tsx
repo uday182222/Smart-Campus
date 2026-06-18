@@ -16,6 +16,7 @@ import MyStudentsScreen from '../screens/teacher/MyStudentsScreen';
 import RemarksScreen from '../screens/teacher/RemarksScreen';
 import MessagesScreen from '../screens/teacher/MessagesScreen';
 import TeacherMoreScreen from '../screens/teacher/TeacherMoreScreen';
+import GroupsScreen from '../screens/teacher/GroupsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -136,6 +137,7 @@ function MoreStack() {
   return (
     <MoreStackNav.Navigator screenOptions={SO}>
       <MoreStackNav.Screen name="TeacherMore" component={TeacherMoreScreen} />
+      <MoreStackNav.Screen name="Groups" component={GroupsScreen} />
       <MoreStackNav.Screen name="Calendar" component={CalendarScreen} />
       <MoreStackNav.Screen name="Profile" component={ProfileScreen} />
       <MoreStackNav.Screen name="Settings" component={SettingsScreen} />

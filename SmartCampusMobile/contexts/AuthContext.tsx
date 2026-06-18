@@ -1,5 +1,18 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import * as Notifications from 'expo-notifications';
 import AuthService, { User } from '../services/AuthService';
+import { apiClient } from '../services/apiClient';
+
+const registerPushToken = async (userId: string) => {
+  try {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') return;
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    await apiClient.patch(`/users/${userId}/push-token`, { expoPushToken: token });
+  } catch (_e) {
+    // Push registration is best-effort
+  }
+};
 
 interface AuthContextType {
   currentUser: User | null;
@@ -47,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setCurrentUser(user);
           setUserData(user);
           setSchoolData(user.school ? { id: user.school.id, name: user.school.name } : null);
+          registerPushToken(user.id).catch(() => {});
         } else {
           setCurrentUser(null);
           setUserData(null);
@@ -79,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setCurrentUser(result.user);
         setUserData(result.user);
         setSchoolData(result.user.school ? { id: result.user.school.id, name: result.user.school.name } : null);
+        registerPushToken(result.user.id).catch(() => {});
       } else {
         throw new Error('Login failed');
       }

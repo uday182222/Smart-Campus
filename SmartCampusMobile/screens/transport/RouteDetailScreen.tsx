@@ -27,16 +27,22 @@ export default function RouteDetailScreen() {
       setLoading(false);
       return;
     }
-    (async () => {
+    const loadRoute = async () => {
       try {
         const res = await API.get(`/bushelper/routes/${routeId}`);
         setData((res as any)?.data ?? res);
       } catch (_e) {
-        setData(null);
+        try {
+          const res = await API.get(`/transport/routes/${routeId}`);
+          setData((res as any)?.data ?? res);
+        } catch (_e2) {
+          setData(null);
+        }
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    loadRoute();
   }, [routeId]);
 
   const handleStartTrip = () => {

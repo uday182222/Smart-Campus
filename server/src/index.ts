@@ -91,7 +91,7 @@ process.on('uncaughtException', (error: Error) => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: any) => {
   logger.error('Unhandled Rejection:', reason);
-  process.exit(1);
+  // Do not crash the process on unhandled rejections.
 });
 
 // Graceful shutdown
