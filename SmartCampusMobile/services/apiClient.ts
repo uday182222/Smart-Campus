@@ -7,21 +7,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * NETWORK SETUP:
  * For local development on a physical device:
  * 1. Find your computer's local IP: Mac → ifconfig | grep "inet ", Windows → ipconfig
- * 2. Update EXPO_PUBLIC_API_URL in .env or .env.local to http://YOUR_IP:5001/api/v1
- * 3. Make sure your phone and computer are on the SAME WiFi network
- * 4. Make sure server is running: cd server && npm run dev
+ * 2. Update EXPO_PUBLIC_API_URL in .env or .env.local (e.g. http://13.233.194.7:5000/api/v1)
+ * 3. Make sure your phone can reach the server (same network or public IP)
+ * 4. Make sure server is running
  */
+const DEFAULT_API_URL = 'http://13.233.194.7:5000/api/v1';
 
 const envApiUrl =
   typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL : undefined;
 
 if (!envApiUrl && __DEV__) {
   console.warn(
-    '⚠️ EXPO_PUBLIC_API_URL not set — falling back to http://localhost:5001/api/v1. Add it to SmartCampusMobile/.env.local and restart Expo with: npx expo start -c'
+    `⚠️ EXPO_PUBLIC_API_URL not set — falling back to ${DEFAULT_API_URL}. Add it to SmartCampusMobile/.env.local and restart Expo with: npx expo start -c`
   );
 }
 
-const API_BASE_URL = envApiUrl ?? 'http://localhost:5001/api/v1';
+const API_BASE_URL = envApiUrl ?? DEFAULT_API_URL;
 
 if (__DEV__) {
   console.log('🌐 API BASE URL:', API_BASE_URL);
@@ -132,7 +133,7 @@ export class ApiClient {
           );
           if (loopback) {
             console.error(
-              '[API] If you are on a physical phone, replace localhost with your Mac LAN IP (e.g. http://192.168.x.x:5001/api/v1); same Wi‑Fi. Simulator on this Mac can use localhost.'
+              '[API] If you are on a physical phone, set EXPO_PUBLIC_API_URL to your server IP (e.g. http://13.233.194.7:5000/api/v1) in .env.local and restart Expo.'
             );
           }
           console.error('[API] Current baseURL:', url);

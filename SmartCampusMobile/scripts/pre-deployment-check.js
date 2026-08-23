@@ -123,7 +123,7 @@ async function checkEnvironmentVariables() {
 async function checkAPIEndpoint() {
   header('2. Checking API Endpoint');
 
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://13.233.194.7:5000/api/v1';
 
   try {
     const startTime = Date.now();

@@ -7,13 +7,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:5000/api/v1' 
-  : 'https://your-production-api.com/api/v1';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://13.233.194.7:5000/api/v1';
 
-const WS_URL = __DEV__
-  ? 'ws://localhost:5000/ws'
-  : 'wss://your-production-api.com/ws';
+const WS_URL = `${API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/^http/, 'ws')}/ws`;
 
 export interface HelperLoginResponse {
   helperId: string;

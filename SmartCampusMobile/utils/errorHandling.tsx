@@ -504,9 +504,7 @@ export const reportErrorToSupport = async (
 };
 
 // Export constants
-export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:5000/api/v1' 
-  : 'https://your-production-api.com/api/v1';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://13.233.194.7:5000/api/v1';
 
 // Common validation patterns
 export const ValidationPatterns = {
