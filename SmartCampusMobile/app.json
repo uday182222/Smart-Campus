@@ -27,7 +27,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.smartcampusapp.school",
-      "versionCode": 5,
+      "versionCode": 6,
       "usesCleartextTraffic": true
     },
     "web": {
