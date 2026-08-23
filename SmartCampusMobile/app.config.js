@@ -23,7 +23,9 @@ function applyExpoPublicEnvFromFiles() {
       if (doubleQuoted || singleQuoted) {
         val = val.slice(1, -1);
       }
-      process.env[key] = val;
+      if (!process.env[key]) {
+        process.env[key] = val;
+      }
     }
   }
 
