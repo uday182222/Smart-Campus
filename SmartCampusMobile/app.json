@@ -17,6 +17,7 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
         }
       }
@@ -27,13 +28,20 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.smartcampusapp.school",
-      "versionCode": 11,
-      "usesCleartextTraffic": true
+      "versionCode": 12
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       [
         "expo-notifications",
         {
