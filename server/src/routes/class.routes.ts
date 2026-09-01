@@ -18,6 +18,9 @@ router.patch(
   classController.setClassTeacher,
 );
 
+// GET /classes/:classId/students — must be before /:id
+router.get('/:classId/students', classController.listStudents);
+
 // GET /classes/:id — get one class with teachers and students
 router.get('/:id', classController.getOne);
 

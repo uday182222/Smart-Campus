@@ -6,6 +6,29 @@ import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
+/** Students linked to a class via distinct attendance records (same as getOne). */
+async function resolveClassStudents(classId: string) {
+  const attendanceRecords = await prisma.attendance.findMany({
+    where: { classId },
+    select: { studentId: true },
+    distinct: ['studentId'],
+  });
+  const studentIds = attendanceRecords.map((a) => a.studentId);
+  if (!studentIds.length) return [];
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: studentIds }, role: 'STUDENT' },
+    select: { id: true, name: true, photo: true, metadata: true },
+  });
+
+  return users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    rollNumber: (u.metadata as { rollNumber?: string } | null)?.rollNumber ?? '',
+    photo: u.photo,
+  }));
+}
+
 export const classController = {
   /** GET /classes — list classes (filter by schoolId from JWT) */
   async list(req: AuthRequest, res: Response) {
@@ -67,27 +90,36 @@ export const classController = {
     });
     if (!cls) throw new AppError('Class not found', 404);
 
-    // Students: distinct studentIds from attendance for this class, with user details
-    const attendanceRecords = await prisma.attendance.findMany({
-      where: { classId: id },
-      select: { studentId: true },
-      distinct: ['studentId']
-    });
-    const studentIds = attendanceRecords.map(a => a.studentId);
-    const students = studentIds.length
-      ? await prisma.user.findMany({
-          where: { id: { in: studentIds }, role: 'STUDENT' },
-          select: { id: true, name: true, email: true }
-        })
-      : [];
+    const students = await resolveClassStudents(id);
 
     return res.json({
       success: true,
       data: {
         class: cls,
-        students
-      }
+        students,
+      },
     });
+  },
+
+  /** GET /classes/:classId/students — students in a class */
+  async listStudents(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { classId } = req.params;
+      const schoolId = req.user?.schoolId;
+      if (!schoolId) throw new ForbiddenError('School access required');
+
+      const cls = await prisma.class.findUnique({ where: { id: classId } });
+      if (!cls) throw new AppError('Class not found', 404);
+      if (cls.schoolId !== schoolId) {
+        throw new ForbiddenError('Access denied: class does not belong to your school');
+      }
+
+      const students = await resolveClassStudents(classId);
+      return res.json({ success: true, data: students });
+    } catch (error) {
+      logger.error('listStudents error:', error);
+      return next(error);
+    }
   },
 
   /** POST /classes — create class (ADMIN/PRINCIPAL) */

@@ -44,8 +44,32 @@ interface ClassRow {
   section: string;
   schoolId: string;
   roomNumber?: string;
-  studentCount?: number;
+  currentStudents?: number;
   teachers?: TeacherAssignment[];
+}
+
+interface ClassStudentRow {
+  id: string;
+  name: string;
+  rollNumber?: string;
+  photo?: string | null;
+}
+
+function studentCountFromClass(c: ClassRow): number {
+  if (typeof c.currentStudents === 'number') return c.currentStudents;
+  return 0;
+}
+
+function studentInitials(name: string): string {
+  return (
+    name
+      ?.split(/\s+/)
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?'
+  );
 }
 
 function classTeacherName(c: ClassRow): string | null {
@@ -102,6 +126,10 @@ export default function ClassManagementScreen() {
   const [teacherOptions, setTeacherOptions] = useState<TeacherAssignment[]>([]);
   const [teacherSheetLoading, setTeacherSheetLoading] = useState(false);
   const [assigningTeacherId, setAssigningTeacherId] = useState<string | null>(null);
+  const [studentSheetOpen, setStudentSheetOpen] = useState(false);
+  const [studentSheetClass, setStudentSheetClass] = useState<ClassRow | null>(null);
+  const [studentSheetList, setStudentSheetList] = useState<ClassStudentRow[]>([]);
+  const [studentSheetLoading, setStudentSheetLoading] = useState(false);
 
   const schoolId = (userData as any)?.schoolId ?? '';
 
@@ -109,6 +137,9 @@ export default function ClassManagementScreen() {
     try {
       const res = await apiClient.get<{ data?: { classes?: ClassRow[] } }>('/classes');
       const classes = (res as any).data?.classes ?? [];
+      if (__DEV__ && Array.isArray(classes) && classes.length > 0) {
+        console.log('[ClassManagement] sample class from GET /classes:', classes[0]);
+      }
       setList(Array.isArray(classes) ? classes : []);
     } catch (_e) {
       setList([]);
@@ -125,6 +156,24 @@ export default function ClassManagementScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     loadClasses();
+  };
+
+  const openStudentSheet = async (c: ClassRow) => {
+    setStudentSheetClass(c);
+    setStudentSheetOpen(true);
+    setStudentSheetLoading(true);
+    setStudentSheetList([]);
+    try {
+      const res = await apiClient.get(`/classes/${c.id}/students`);
+      const payload = (res as any)?.data ?? res;
+      const students = Array.isArray(payload) ? payload : payload?.data ?? [];
+      setStudentSheetList(Array.isArray(students) ? students : []);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Failed to load students.');
+      setStudentSheetOpen(false);
+    } finally {
+      setStudentSheetLoading(false);
+    }
   };
 
   const openClassTeacherSheet = async (c: ClassRow) => {
@@ -292,9 +341,11 @@ export default function ClassManagementScreen() {
                 {item.roomNumber ? (
                   <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 8 }}>Room {item.roomNumber}</Text>
                 ) : null}
-                <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 4 }}>
-                  {(item as any).studentCount ?? 0} students
-                </Text>
+                <TouchableOpacity onPress={() => openStudentSheet(item)} activeOpacity={0.85} style={{ marginTop: 4 }}>
+                  <Text style={{ color: T.textMuted, fontSize: 12 }}>
+                    {studentCountFromClass(item)} students
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => openClassTeacherSheet(item)} activeOpacity={0.85} style={{ marginTop: 10 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: T.textMuted }}>Class teacher</Text>
                   <Text
@@ -409,6 +460,71 @@ export default function ClassManagementScreen() {
 
             <TouchableOpacity
               onPress={() => setTeacherSheetOpen(false)}
+              style={{
+                marginTop: 16,
+                backgroundColor: T.primaryLight,
+                borderRadius: T.radius.full,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 15 }}>Close</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={studentSheetOpen} transparent animationType="slide" onRequestClose={() => setStudentSheetOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setStudentSheetOpen(false)}>
+          <Pressable style={{ backgroundColor: T.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: '70%' }} onPress={(e) => e.stopPropagation()}>
+            <View style={{ width: 40, height: 4, backgroundColor: T.inputBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 20, marginBottom: 4 }}>Students</Text>
+            <Text style={{ color: T.textMuted, fontSize: 13, marginBottom: 16 }}>
+              {studentSheetClass ? `${studentSheetClass.name} ${studentSheetClass.section}` : ''}
+            </Text>
+
+            {studentSheetLoading ? (
+              <ActivityIndicator color={T.primary} style={{ marginVertical: 24 }} />
+            ) : studentSheetList.length === 0 ? (
+              <Text style={{ color: T.textMuted, textAlign: 'center', marginVertical: 24 }}>No students in this class yet.</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {studentSheetList.map((s) => (
+                  <View
+                    key={s.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 14,
+                      borderBottomWidth: 1,
+                      borderBottomColor: T.inputBorder,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: T.primary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 12 }}>{studentInitials(s.name)}</Text>
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>{s.name}</Text>
+                      <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>
+                        Roll {s.rollNumber?.trim() ? s.rollNumber : '—'}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setStudentSheetOpen(false)}
               style={{
                 marginTop: 16,
                 backgroundColor: T.primaryLight,

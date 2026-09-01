@@ -372,6 +372,51 @@ export const adminController = {
         take: limitNum,
       });
 
+      const isParentQuery = role === 'PARENT';
+      let childrenByParentId: Record<
+        string,
+        Array<{ id: string; name: string; className: string; section: string }>
+      > = {};
+
+      if (isParentQuery && users.length > 0) {
+        const parentIds = users.filter((u) => u.role === 'PARENT').map((u) => u.id);
+        if (parentIds.length > 0) {
+          const links = await prisma.parentStudent.findMany({
+            where: { parentId: { in: parentIds } },
+            include: {
+              student: { select: { id: true, name: true, metadata: true } },
+            },
+          });
+
+          const classIdSet = new Set<string>();
+          for (const link of links) {
+            const meta = link.student.metadata as { classId?: string } | null;
+            if (meta?.classId) classIdSet.add(meta.classId);
+          }
+
+          const classes =
+            classIdSet.size > 0
+              ? await prisma.class.findMany({
+                  where: { id: { in: [...classIdSet] } },
+                  select: { id: true, name: true, section: true },
+                })
+              : [];
+          const classById = Object.fromEntries(classes.map((c) => [c.id, c]));
+
+          for (const link of links) {
+            const meta = link.student.metadata as { classId?: string } | null;
+            const cls = meta?.classId ? classById[meta.classId] : undefined;
+            if (!childrenByParentId[link.parentId]) childrenByParentId[link.parentId] = [];
+            childrenByParentId[link.parentId].push({
+              id: link.student.id,
+              name: link.student.name,
+              className: cls?.name ?? '',
+              section: cls?.section ?? '',
+            });
+          }
+        }
+      }
+
       // Format response
       const formattedUsers = users.map((user) => ({
         id: user.id,
@@ -386,6 +431,9 @@ export const adminController = {
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        ...(isParentQuery && user.role === 'PARENT'
+          ? { children: childrenByParentId[user.id] ?? [] }
+          : {}),
       }));
 
       logger.info(`Retrieved ${formattedUsers.length} users for school ${targetSchoolId}`);

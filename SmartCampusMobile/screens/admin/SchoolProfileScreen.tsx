@@ -120,14 +120,19 @@ export default function SchoolProfileScreen() {
         primaryColor,
         secondaryColor,
       });
-      setSchoolTheme({
-        ...theme,
-        schoolName: name.trim() || theme.schoolName,
-        primaryColor,
-        secondaryColor,
-        logoUrl: theme.logoUrl,
-        schoolId: theme.schoolId,
+      const infoRes = (await API.get('/admin/school/info')) as any;
+      const school = infoRes?.data?.school ?? infoRes?.school ?? infoRes?.data ?? infoRes;
+      const updatedName = school?.name ?? name.trim() ?? theme.schoolName;
+      await setSchoolTheme({
+        schoolId: theme.schoolId || school?.id || '',
+        schoolName: updatedName,
+        primaryColor: school?.primaryColor ?? primaryColor,
+        secondaryColor: school?.secondaryColor ?? secondaryColor,
+        logoUrl: school?.logoUrl ?? theme.logoUrl,
       });
+      setName(updatedName);
+      if (school?.primaryColor) setPrimaryColor(school.primaryColor);
+      if (school?.secondaryColor) setSecondaryColor(school.secondaryColor);
       Alert.alert('Saved', 'School profile updated.');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to save');

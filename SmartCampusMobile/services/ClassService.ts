@@ -89,7 +89,9 @@ export const ClassService = {
   getStudentsByClass: async (classId: string): Promise<ServiceResponse<any[]>> => {
     try {
       const response = await apiClient.get(`/classes/${classId}/students`);
-      return { success: true, data: response.data?.data ?? response.data ?? [] };
+      const root = response?.data ?? response;
+      const list = Array.isArray(root) ? root : root?.data ?? [];
+      return { success: true, data: Array.isArray(list) ? list : [] };
     } catch (error: any) {
       console.error('ClassService.getStudentsByClass error:', error);
       return { success: false, error: error.message, data: [] };
