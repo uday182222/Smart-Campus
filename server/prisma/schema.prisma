@@ -66,6 +66,7 @@ model School {
   registrationRequests  RegistrationRequest[]
   groups                Group[]
   concerns              Concern[]
+  timetablePeriods      TimetablePeriod[]
   
   @@map("schools")
 }
@@ -103,6 +104,7 @@ model User {
   createdGroups         Group[]         @relation("GroupCreator")
   groupMemberships      GroupMember[]
   concerns              Concern[]
+  timetablePeriods      TimetablePeriod[] @relation("TimetableTeacher")
   
   @@index([schoolId])
   @@index([email])
@@ -145,6 +147,7 @@ model Class {
   attendance            Attendance[]
   homework              Homework[]
   exams                 Exam[]
+  timetablePeriods      TimetablePeriod[]
   
   @@unique([schoolId, name, section])
   @@index([schoolId])
@@ -166,6 +169,30 @@ model TeacherClass {
   @@index([teacherId])
   @@index([classId])
   @@map("teacher_classes")
+}
+
+model TimetablePeriod {
+  id           String   @id @default(uuid())
+  classId      String   @map("class_id")
+  schoolId     String   @map("school_id")
+  dayOfWeek    Int      @map("day_of_week")
+  periodNumber Int      @map("period_number")
+  subject      String
+  teacherId    String?  @map("teacher_id")
+  startTime    String   @map("start_time")
+  endTime      String   @map("end_time")
+  roomNumber   String?  @map("room_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  class        Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school       School   @relation(fields: [schoolId], references: [id])
+  teacher      User?    @relation("TimetableTeacher", fields: [teacherId], references: [id])
+
+  @@unique([classId, dayOfWeek, periodNumber])
+  @@index([classId, dayOfWeek])
+  @@index([schoolId])
+  @@map("timetable_periods")
 }
 
 model Attendance {

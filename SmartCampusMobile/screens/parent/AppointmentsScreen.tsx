@@ -55,6 +55,11 @@ export default function AppointmentsScreen() {
     d.setHours(12, 0, 0, 0);
     return d;
   });
+  const [draftDate, setDraftDate] = useState(() => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    return d;
+  });
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<{ id: string; name: string; subject?: string } | null>(null);
   const [teacherPickerVisible, setTeacherPickerVisible] = useState(false);
@@ -255,160 +260,170 @@ export default function AppointmentsScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setModalVisible(false)}>
           <Pressable style={{ backgroundColor: PD.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '92%' }} onPress={() => {}}>
-            <View style={{ width: 40, height: 4, backgroundColor: PD.cardBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
-            <Text style={{ color: PD.textDark, fontWeight: '900', fontSize: 22 }}>Book Appointment</Text>
-            <Text style={{ color: PD.textMuted, fontSize: 12, marginTop: 4, marginBottom: 16 }}>Schedule a meeting with a teacher</Text>
-            <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>Date</Text>
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                borderWidth: 1.5,
-                borderColor: PD.cardBorder,
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                backgroundColor: PD.bg,
-                marginBottom: 4,
-              }}
-            >
-              <Calendar size={18} color={T.primary} strokeWidth={1.8} />
-              <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: PD.textDark }}>
-                {selectedDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              </Text>
-              <ChevronDown size={16} color={T.textPlaceholder} strokeWidth={1.8} />
-            </TouchableOpacity>
-            {showDatePicker && Platform.OS === 'android' ? (
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                minimumDate={new Date()}
-                onChange={(event, date) => {
-                  setShowDatePicker(false);
-                  if (event.type === 'dismissed') return;
-                  if (date) setSelectedDate(date);
+            <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+              <View style={{ width: 40, height: 4, backgroundColor: PD.cardBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
+              <Text style={{ color: PD.textDark, fontWeight: '900', fontSize: 22 }}>Book Appointment</Text>
+              <Text style={{ color: PD.textMuted, fontSize: 12, marginTop: 4, marginBottom: 16 }}>Schedule a meeting with a teacher</Text>
+              <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>Date</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setTeacherPickerVisible(false);
+                  setDraftDate(selectedDate);
+                  setShowDatePicker(true);
                 }}
-              />
-            ) : null}
-
-            <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 8 }}>Teacher / faculty</Text>
-            <TouchableOpacity
-              onPress={() => setTeacherPickerVisible(true)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 10,
-                borderWidth: 1.5,
-                borderColor: PD.cardBorder,
-                borderRadius: 14,
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                backgroundColor: PD.bg,
-                marginBottom: 8,
-              }}
-            >
-              <MaterialCommunityIcons name="school-outline" size={20} color={T.primary} />
-              <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: PD.textDark }} numberOfLines={2}>
-                {selectedTeacher ? `${selectedTeacher.name} · ${selectedTeacher.subject ?? 'Teacher'}` : 'Select teacher'}
-              </Text>
-              <ChevronDown size={16} color={T.textPlaceholder} strokeWidth={1.8} />
-            </TouchableOpacity>
-            <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 8 }}>Time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {TIME_SLOTS.map((slot) => (
-                <TouchableOpacity
-                  key={slot}
-                  onPress={() => setForm((f) => ({ ...f, time: slot }))}
-                  style={{
-                    backgroundColor: form.time === slot ? primary : PD.bg,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    borderRadius: 999,
-                    marginRight: 8,
-                    borderWidth: form.time === slot ? 0 : 1,
-                    borderColor: PD.cardBorder,
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  borderWidth: 1.5,
+                  borderColor: PD.cardBorder,
+                  borderRadius: 14,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  backgroundColor: PD.bg,
+                  marginBottom: 4,
+                }}
+              >
+                <Calendar size={18} color={T.primary} strokeWidth={1.8} />
+                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: PD.textDark }}>
+                  {selectedDate.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                </Text>
+                <ChevronDown size={16} color={T.textPlaceholder} strokeWidth={1.8} />
+              </TouchableOpacity>
+              {showDatePicker && Platform.OS === 'android' ? (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={(event, date) => {
+                    setShowDatePicker(false);
+                    if (event.type === 'dismissed') return;
+                    if (date) setSelectedDate(date);
                   }}
-                >
-                  <Text style={{ color: form.time === slot ? '#FFFFFF' : PD.textDark, fontWeight: form.time === slot ? '900' : '600', fontSize: 13 }}>{slot}</Text>
-                </TouchableOpacity>
-              ))}
+                />
+              ) : null}
+              {showDatePicker && Platform.OS === 'ios' ? (
+                <View style={{ backgroundColor: PD.bg, borderRadius: 14, marginTop: 8, padding: 8 }}>
+                  <DateTimePicker
+                    value={draftDate}
+                    mode="date"
+                    display="spinner"
+                    minimumDate={new Date()}
+                    onChange={(_, date) => {
+                      if (date) setDraftDate(date);
+                    }}
+                  />
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => setShowDatePicker(false)}
+                      style={{ flex: 1, borderWidth: 1.5, borderColor: PD.cardBorder, borderRadius: 999, paddingVertical: 12, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: PD.textDark, fontWeight: '700' }}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedDate(draftDate);
+                        setShowDatePicker(false);
+                      }}
+                      style={{ flex: 1, backgroundColor: T.primary, borderRadius: 999, paddingVertical: 12, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: T.textWhite, fontWeight: '700' }}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+
+              <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 8 }}>Teacher / faculty</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDatePicker(false);
+                  setTeacherPickerVisible(true);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  borderWidth: 1.5,
+                  borderColor: PD.cardBorder,
+                  borderRadius: 14,
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  backgroundColor: PD.bg,
+                  marginBottom: 8,
+                }}
+              >
+                <MaterialCommunityIcons name="school-outline" size={20} color={T.primary} />
+                <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: PD.textDark }} numberOfLines={2}>
+                  {selectedTeacher ? `${selectedTeacher.name} · ${selectedTeacher.subject ?? 'Teacher'}` : 'Select teacher'}
+                </Text>
+                <ChevronDown size={16} color={T.textPlaceholder} strokeWidth={1.8} />
+              </TouchableOpacity>
+              {teacherPickerVisible ? (
+                <View style={{ backgroundColor: PD.bg, borderRadius: 14, marginTop: 8, maxHeight: 220, borderWidth: 1.5, borderColor: PD.cardBorder }}>
+                  <ScrollView nestedScrollEnabled>
+                    {teachers.length === 0 ? (
+                      <Text style={{ color: PD.textMuted, padding: 16, textAlign: 'center' }}>No teachers available.</Text>
+                    ) : (
+                      teachers.map((t: any) => (
+                        <TouchableOpacity
+                          key={t.id}
+                          onPress={() => {
+                            setSelectedTeacher({ id: t.id, name: t.name, subject: t.subject });
+                            setTeacherPickerVisible(false);
+                          }}
+                          style={{ paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: PD.cardBorder }}
+                        >
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: PD.textDark }}>{t.name ?? '—'}</Text>
+                          {t.subject ? <Text style={{ fontSize: 12, color: PD.textMuted, marginTop: 2 }}>{t.subject}</Text> : null}
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                </View>
+              ) : null}
+              <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginTop: 12, marginBottom: 8 }}>Time</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} nestedScrollEnabled>
+                {TIME_SLOTS.map((slot) => (
+                  <TouchableOpacity
+                    key={slot}
+                    onPress={() => setForm((f) => ({ ...f, time: slot }))}
+                    style={{
+                      backgroundColor: form.time === slot ? primary : PD.bg,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      marginRight: 8,
+                      borderWidth: form.time === slot ? 0 : 1,
+                      borderColor: PD.cardBorder,
+                    }}
+                  >
+                    <Text style={{ color: form.time === slot ? '#FFFFFF' : PD.textDark, fontWeight: form.time === slot ? '900' : '600', fontSize: 13 }}>{slot}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>Duration</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                {DURATIONS.map((d) => (
+                  <TouchableOpacity
+                    key={d}
+                    onPress={() => setForm((f) => ({ ...f, duration: d }))}
+                    style={{
+                      backgroundColor: form.duration === d ? primary : PD.bg,
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      borderWidth: form.duration === d ? 0 : 1,
+                      borderColor: PD.cardBorder,
+                    }}
+                  >
+                    <Text style={{ color: form.duration === d ? '#FFFFFF' : PD.textDark, fontWeight: '900' }}>{d} min</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <LightInput label="Reason" placeholder="Reason for appointment..." value={form.reason} onChangeText={(t) => setForm((f) => ({ ...f, reason: t }))} multiline />
+              <LightButton label="Book Appointment" onPress={book} variant="primary" icon="calendar-outline" iconPosition="left" style={{ marginTop: 16 }} loading={saving} />
             </ScrollView>
-            <Text style={{ color: PD.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 8 }}>Duration</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              {DURATIONS.map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  onPress={() => setForm((f) => ({ ...f, duration: d }))}
-                  style={{
-                    backgroundColor: form.duration === d ? primary : PD.bg,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 999,
-                    borderWidth: form.duration === d ? 0 : 1,
-                    borderColor: PD.cardBorder,
-                  }}
-                >
-                  <Text style={{ color: form.duration === d ? '#FFFFFF' : PD.textDark, fontWeight: '900' }}>{d} min</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <LightInput label="Reason" placeholder="Reason for appointment..." value={form.reason} onChangeText={(t) => setForm((f) => ({ ...f, reason: t }))} multiline />
-            <LightButton label="Book Appointment" onPress={book} variant="primary" icon="calendar-outline" iconPosition="left" style={{ marginTop: 16 }} loading={saving} />
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={showDatePicker && Platform.OS === 'ios'} transparent animationType="fade">
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }} onPress={() => setShowDatePicker(false)}>
-          <Pressable onPress={() => {}} style={{ backgroundColor: PD.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 24 }}>
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="spinner"
-              minimumDate={new Date()}
-              onChange={(_, date) => {
-                if (date) setSelectedDate(date);
-              }}
-            />
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(false)}
-              style={{ marginHorizontal: 20, paddingVertical: 14, borderRadius: 14, backgroundColor: primary, alignItems: 'center' }}
-            >
-              <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Done</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={teacherPickerVisible} transparent animationType="slide">
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }} onPress={() => setTeacherPickerVisible(false)}>
-          <Pressable style={{ backgroundColor: PD.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '70%' }} onPress={() => {}}>
-            <View style={{ width: 40, height: 4, backgroundColor: PD.cardBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ color: PD.textDark, fontWeight: '900', fontSize: 18, marginBottom: 12 }}>Select teacher</Text>
-            <FlatList
-              data={teachers}
-              keyExtractor={(t) => t.id}
-              ListEmptyComponent={<Text style={{ color: PD.textMuted, paddingVertical: 24 }}>No teachers available.</Text>}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedTeacher({ id: item.id, name: item.name, subject: item.subject });
-                    setTeacherPickerVisible(false);
-                  }}
-                  style={{
-                    paddingVertical: 14,
-                    borderBottomWidth: 1,
-                    borderBottomColor: PD.cardBorder,
-                  }}
-                >
-                  <Text style={{ color: PD.textDark, fontWeight: '800' }}>{item.name}</Text>
-                  <Text style={{ color: PD.textMuted, fontSize: 12, marginTop: 4 }}>{item.subject ?? 'Teacher'}</Text>
-                </TouchableOpacity>
-              )}
-            />
           </Pressable>
         </Pressable>
       </Modal>

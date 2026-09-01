@@ -2,7 +2,7 @@
  * Parent Attendance — premium month view, calendar, log.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -92,13 +92,16 @@ export default function AttendanceHistoryScreen() {
   };
 
   const childName = activeChild?.name ?? children[0]?.name ?? 'Child';
-  const recordMap = new Map(
-    records.map((r) => {
-      const raw = r.date;
-      const key = typeof raw === 'string' ? raw.split('T')[0] : new Date(raw).toISOString().split('T')[0];
-      return [key, (r.status || '').toUpperCase()];
-    }),
-  );
+
+  const recordMap = useMemo(() => {
+    return new Map(
+      records.map((r) => {
+        const raw = r.date;
+        const key = typeof raw === 'string' ? raw.split('T')[0] : new Date(raw).toISOString().split('T')[0];
+        return [key, (r.status || '').toUpperCase()];
+      }),
+    );
+  }, [records]);
 
   const getDayStyle = (status?: string) => {
     if (!status) return { bg: '#FFFFFF', text: T.textPlaceholder, border: T.inputBorder };
@@ -114,22 +117,28 @@ export default function AttendanceHistoryScreen() {
     }
   };
   const cellSize = Math.max(28, Math.min(CELL - 6, 40));
-  const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  const startPad = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
 
-  const gridCells: { date: number; dateStr: string; status?: string; isToday: boolean; isFuture: boolean; weekend: boolean }[] = [];
-  for (let i = 0; i < startPad; i++) gridCells.push({ date: 0, dateStr: '', isToday: false, isFuture: false, weekend: false });
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const status = recordMap.get(dateStr);
-    const dt = new Date(year, month - 1, d);
-    const isFuture = dt > new Date();
-    const weekend = dt.getDay() === 0 || dt.getDay() === 6;
-    gridCells.push({ date: d, dateStr, status, isToday: dateStr === todayStr, isFuture, weekend });
-  }
+  const gridCells = useMemo(() => {
+    const firstDay = new Date(year, month - 1, 1);
+    const lastDay = new Date(year, month, 0);
+    const startPad = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const cells: { date: number; dateStr: string; status?: string; isToday: boolean; isFuture: boolean; weekend: boolean }[] = [];
+
+    for (let i = 0; i < startPad; i++) {
+      cells.push({ date: 0, dateStr: '', isToday: false, isFuture: false, weekend: false });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const status = recordMap.get(dateStr);
+      const dt = new Date(year, month - 1, d);
+      const isFuture = dt > new Date();
+      const weekend = dt.getDay() === 0 || dt.getDay() === 6;
+      cells.push({ date: d, dateStr, status, isToday: dateStr === todayStr, isFuture, weekend });
+    }
+    return cells;
+  }, [month, year, recordMap]);
 
   const pct = Math.round(summary.percentage);
 
@@ -204,7 +213,7 @@ export default function AttendanceHistoryScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
             {gridCells.map((cell, i) => {
               if (cell.date === 0) {
-                return <View key={i} style={{ width: CELL, height: CELL, margin: 2, alignItems: 'center', justifyContent: 'center' }} />;
+                return <View key={`pad-${i}`} style={{ width: CELL, height: CELL, margin: 2, alignItems: 'center', justifyContent: 'center' }} />;
               }
               const st = (cell.status || '').toUpperCase();
               const dayStyle = getDayStyle(cell.isFuture ? undefined : st);
@@ -214,7 +223,7 @@ export default function AttendanceHistoryScreen() {
               const border = isToday ? primary : dayStyle.border;
               return (
                 <View
-                  key={i}
+                  key={cell.dateStr}
                   style={{
                     width: CELL,
                     height: CELL,

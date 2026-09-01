@@ -2,7 +2,7 @@
  * Parent Calendar — school events with week strip + list.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -84,14 +84,26 @@ export default function ParentCalendarScreen() {
     setRefreshing(false);
   };
 
-  const selectedStr = selectedDate.toISOString().split('T')[0];
-  const dayEvents = events.filter((e) => {
-    const d = (e.date || e.startDate || '').split('T')[0];
-    return d === selectedStr;
-  });
+  const handleDateSelect = useCallback((date: Date) => {
+    setSelectedDate(date);
+  }, []);
 
-  const marked = events.map((e) => (e.date || e.startDate || '').split('T')[0]).filter(Boolean);
-  const upcoming = events.filter((e) => new Date(e.date || e.startDate) >= new Date()).slice(0, 5);
+  const selectedStr = selectedDate.toISOString().split('T')[0];
+
+  const dayEvents = useMemo(() => {
+    return events.filter((e) => {
+      const d = (e.date || e.startDate || '').split('T')[0];
+      return d === selectedStr;
+    });
+  }, [events, selectedStr]);
+
+  const marked = useMemo(() => {
+    return events.map((e) => (e.date || e.startDate || '').split('T')[0]).filter(Boolean);
+  }, [events]);
+
+  const upcoming = useMemo(() => {
+    return events.filter((e) => new Date(e.date || e.startDate) >= new Date()).slice(0, 5);
+  }, [events]);
 
   const monthLabel = viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
@@ -141,7 +153,7 @@ export default function ParentCalendarScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
       >
         <View style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 16, marginTop: 16 }, cardShadow]}>
-          <DateStrip selectedDate={selectedDate} onDateSelect={setSelectedDate} markedDates={marked} accent={primary} />
+          <DateStrip selectedDate={selectedDate} onDateSelect={handleDateSelect} markedDates={marked} accent={primary} />
         </View>
 
         <Text style={{ color: PD.textDark, fontWeight: '900', fontSize: 20, marginTop: 24 }}>

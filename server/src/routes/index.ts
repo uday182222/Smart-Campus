@@ -28,6 +28,7 @@ import teacherRoutes from './teacher.routes';
 import bushelperRoutes from './bushelper.routes';
 import eventsRoutes from './events.routes';
 import groupsRoutes from './groups.routes';
+import timetableRoutes from './timetable.routes';
 
 const router = Router();
 
@@ -56,6 +57,8 @@ router.get('/health', (_req, res) => {
       'Support',
       'WhatsApp',
       'Email',
+      'Groups',
+      'Timetable',
       'System'
     ]
   });
@@ -89,6 +92,7 @@ router.use('/registration', registrationRoutes);
 router.use('/superadmin', superadminRoutes);
 router.use('/teacher', teacherRoutes);
 router.use('/groups', groupsRoutes);
+router.use('/timetable', timetableRoutes);
 router.use('/bushelper', bushelperRoutes);
 router.use('/events', eventsRoutes);
 
