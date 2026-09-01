@@ -14,6 +14,7 @@ import { useActiveChild } from '../contexts/ActiveChildContext';
 import { Pressable3D } from '../components/ui';
 import { LT } from '../constants/lightTheme';
 import { PD, cardShadow, darkenHex } from '../constants/parentDesign';
+import { displayName } from '../utils/displayName';
 
 const ROLE_CONFIG: Record<string, { label: string }> = {
   SUPER_ADMIN: { label: 'Super Administrator' },
@@ -53,6 +54,7 @@ const ProfileScreen: React.FC = () => {
   }
 
   const roleConfig = ROLE_CONFIG[user.role] ?? { label: user.role };
+  const userDisplayName = displayName(user.name, 'User');
   const isParentRole = (user.role ?? '').toUpperCase() === 'PARENT';
   const primaryBranded = theme.primaryColor || '#2B5CE6';
   const primaryDarkBranded = darkenHex(primaryBranded, 0.2);
@@ -76,9 +78,9 @@ const ProfileScreen: React.FC = () => {
                 cardShadow,
               ]}
             >
-              <Text style={{ color: primaryBranded, fontSize: 28, fontWeight: '900' }}>{getInitials(user.name)}</Text>
+              <Text style={{ color: primaryBranded, fontSize: 28, fontWeight: '900' }}>{getInitials(userDisplayName)}</Text>
             </View>
-            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '900', marginTop: 12, textAlign: 'center' }}>{user.name}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '900', marginTop: 12, textAlign: 'center' }}>{userDisplayName}</Text>
             <View style={{ marginTop: 8, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 }}>
               <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>{roleConfig.label}</Text>
             </View>
@@ -189,7 +191,7 @@ const ProfileScreen: React.FC = () => {
                 ...LT.shadow,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{getInitials(user.name)}</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>{getInitials(userDisplayName)}</Text>
             </View>
           )}
           <Text
@@ -202,7 +204,7 @@ const ProfileScreen: React.FC = () => {
               letterSpacing: -0.5,
             }}
           >
-            {user.name}
+            {userDisplayName}
           </Text>
           <View
             style={{

@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { House, Users, Bus, BarChart2, MoreHorizontal } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../contexts/AuthContext';
 import { T } from '../../constants/theme';
+import { canAccess } from '../../utils/rolePermissions';
 
 const TABS: { name: string; Icon: LucideIcon; label: string }[] = [
   { name: 'AdminDashboard', Icon: House, label: 'Home' },
@@ -20,6 +22,9 @@ export interface AdminFloatingNavProps {
 
 export function AdminFloatingNav({ navigation, activeTab }: AdminFloatingNavProps) {
   const insets = useSafeAreaInsets();
+  const { userData } = useAuth();
+  const role = (userData as { role?: string } | null)?.role ?? '';
+  const visibleTabs = TABS.filter((tab) => canAccess(role, tab.name));
 
   return (
     <View
@@ -38,7 +43,7 @@ export function AdminFloatingNav({ navigation, activeTab }: AdminFloatingNavProp
         ...T.shadowLg,
       }}
     >
-      {TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const isActive = activeTab === tab.name;
         const Icon = tab.Icon;
         if (isActive) {

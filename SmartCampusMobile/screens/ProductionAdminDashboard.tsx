@@ -8,11 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Bell,
   Users,
-  GraduationCap,
   Layers,
   UserPlus,
-  Grid3X3,
-  BarChart3,
   Megaphone,
   ChevronRight,
   Wallet,
@@ -26,6 +23,7 @@ import { DashboardSkeleton } from '../components/ui';
 import { T } from '../constants/theme';
 import { apiClient } from '../services/apiClient';
 import { canAccess } from '../utils/rolePermissions';
+import { displayName } from '../utils/displayName';
 import { AdminFloatingNav } from '../components/ui/AdminFloatingNav';
 
 const API = apiClient as any;
@@ -52,12 +50,12 @@ interface PendingItem {
 }
 
 const QUICK = [
+  { label: 'Announcements', sub: 'Broadcast', Icon: Megaphone, screen: 'Announcements' as const },
   { label: 'Pending Requests', sub: 'Approvals', Icon: UserPlus, screen: 'PendingRequests' as const },
   { label: 'Users', sub: 'Manage accounts', Icon: Users, screen: 'UserManagement' as const },
   { label: 'Classes', sub: 'Sections & rooms', Icon: Layers, screen: 'ClassManagement' as const },
   { label: 'Fees', sub: 'Collection', Icon: Wallet, screen: 'FeeReport' as const },
   { label: 'Attendance', sub: 'Mark & track', Icon: CheckCircle, screen: 'AttendanceReport' as const },
-  { label: 'Announcements', sub: 'Broadcast', Icon: Megaphone, screen: 'Announcements' as const },
 ] as const;
 
 export default function ProductionAdminDashboard() {
@@ -118,7 +116,7 @@ export default function ProductionAdminDashboard() {
     load();
   };
 
-  const adminName = (userData?.name ?? 'Administrator').replace(/\s*\([^)]*\)\s*$/, '');
+  const adminName = displayName(userData?.name, 'Administrator');
   const roleLabel = userData?.role === 'PRINCIPAL' ? 'Principal' : 'School Admin';
   const initials =
     adminName
@@ -303,131 +301,51 @@ export default function ProductionAdminDashboard() {
           <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>{roleLabel}</Text>
         </View>
 
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-            flexDirection: 'row',
-            gap: 12,
-            paddingHorizontal: T.px,
-            marginTop: 20,
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('AttendanceReport')}
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], paddingHorizontal: T.px, marginTop: 20 }}>
+          <View
             style={{
-              flex: 1.1,
-              backgroundColor: T.primary,
-              borderRadius: T.radius.xl,
-              padding: 18,
-              overflow: 'hidden',
-              position: 'relative',
+              backgroundColor: T.card,
+              borderRadius: T.radius.xxl,
+              padding: 20,
+              ...T.shadowSm,
             }}
           >
-            <View
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Today&apos;s Attendance</Text>
+              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700' }}>{todayLine}</Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.success, fontWeight: '900', fontSize: 22 }}>{present}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Present</Text>
+              </View>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.danger, fontWeight: '900', fontSize: 22 }}>{absent}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Absent</Text>
+              </View>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={{ color: T.warning, fontWeight: '900', fontSize: 22 }}>{late}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Late</Text>
+              </View>
+            </View>
+
+            <View style={{ height: 4, backgroundColor: T.inputBorder, borderRadius: 2, overflow: 'hidden', marginTop: 14 }}>
+              <View style={{ height: 4, width: `${pct}%`, backgroundColor: T.primary }} />
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('AttendanceReport')}
               style={{
-                position: 'absolute',
-                bottom: -28,
-                right: -28,
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-                backgroundColor: 'rgba(255,255,255,0.06)',
-              }}
-            />
-            <View
-              style={{
-                position: 'absolute',
-                top: -18,
-                right: 14,
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: 'rgba(255,255,255,0.04)',
-              }}
-            />
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                backgroundColor: 'rgba(255,255,255,0.15)',
+                backgroundColor: T.primary,
                 borderRadius: T.radius.full,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                alignSelf: 'flex-start',
-                marginBottom: 12,
+                paddingVertical: 12,
+                alignItems: 'center',
+                marginTop: 14,
               }}
             >
-              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.9)' }} />
-              <Text style={{ fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 0.4 }}>
-                LIVE
-              </Text>
-            </View>
-            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '600', letterSpacing: 0.8 }}>
-              TODAY&apos;S ATTENDANCE
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 4 }}>
-              <Text style={{ fontSize: 48, fontWeight: '800', color: T.textWhite, letterSpacing: -2, lineHeight: 52 }}>
-                {pct}
-              </Text>
-              <Text style={{ fontSize: 20, fontWeight: '400', color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>%</Text>
-            </View>
-            <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 6 }}>school-wide</Text>
-          </TouchableOpacity>
-
-          <View style={{ flex: 1, gap: 10 }}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('UserManagement')}
-              style={{ backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
-            >
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: T.radius.sm,
-                  backgroundColor: T.primaryLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <Users size={16} color={T.primary} strokeWidth={1.8} />
-              </View>
-              <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>STUDENTS</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
-                <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
-                  {stats?.totalStudents ?? 0}
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('UserManagement')}
-              style={{ backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
-            >
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: T.radius.sm,
-                  backgroundColor: T.primaryLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 8,
-                }}
-              >
-                <GraduationCap size={16} color={T.primary} strokeWidth={1.8} />
-              </View>
-              <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>TEACHERS</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
-                <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
-                  {stats?.totalTeachers ?? 0}
-                </Text>
-              </View>
+              <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 13 }}>Mark Attendance</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -497,55 +415,6 @@ export default function ProductionAdminDashboard() {
 
         {/* Content */}
         <Animated.View style={{ opacity: fadeAnim, paddingTop: 16 }}>
-          <View
-            style={{
-              backgroundColor: T.card,
-              borderRadius: T.radius.xxl,
-              padding: 20,
-              ...T.shadowSm,
-              marginHorizontal: T.px,
-              marginTop: 14,
-            }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Today&apos;s Attendance</Text>
-              <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700' }}>{todayLine}</Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.success, fontWeight: '900', fontSize: 22 }}>{present}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Present</Text>
-              </View>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.danger, fontWeight: '900', fontSize: 22 }}>{absent}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Absent</Text>
-              </View>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.warning, fontWeight: '900', fontSize: 22 }}>{late}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Late</Text>
-              </View>
-            </View>
-
-            <View style={{ height: 4, backgroundColor: T.inputBorder, borderRadius: 2, overflow: 'hidden', marginTop: 14 }}>
-              <View style={{ height: 4, width: `${pct}%`, backgroundColor: T.primary }} />
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('AttendanceReport')}
-              style={{
-                backgroundColor: T.primary,
-                borderRadius: T.radius.full,
-                paddingVertical: 12,
-                alignItems: 'center',
-                marginTop: 14,
-              }}
-            >
-              <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 13 }}>Mark Attendance</Text>
-            </TouchableOpacity>
-          </View>
-
           <View
             style={{
               backgroundColor: T.card,

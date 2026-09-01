@@ -24,9 +24,8 @@ import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
-const ROLE_FILTERS = ['', 'ADMIN', 'TEACHER', 'PARENT', 'BUS_HELPER'] as const;
+const ROLE_FILTERS = ['ADMIN', 'TEACHER', 'PARENT', 'BUS_HELPER'] as const;
 const ROLE_LABELS: Record<string, string> = {
-  '': 'All',
   ADMIN: 'Admin',
   TEACHER: 'Teacher',
   PARENT: 'Parent',
@@ -214,7 +213,7 @@ export default function UserManagementScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('ADMIN');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<{
@@ -409,7 +408,7 @@ export default function UserManagementScreen() {
             const active = roleFilter === r;
             return (
               <TouchableOpacity
-                key={r || 'all'}
+                key={r}
                 onPress={() => setRoleFilter(r)}
                 activeOpacity={0.85}
                 style={{

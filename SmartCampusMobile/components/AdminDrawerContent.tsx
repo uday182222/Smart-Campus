@@ -11,6 +11,8 @@ import { useSchoolTheme } from '../contexts/SchoolThemeContext';
 import { useDrawer } from '../contexts/DrawerContext';
 import { apiClient } from '../services/apiClient';
 import { PD, darkenHex } from '../constants/parentDesign';
+import { canAccess } from '../utils/rolePermissions';
+import { displayName } from '../utils/displayName';
 
 const MENU_ITEMS: Array<{
   key: string;
@@ -41,9 +43,13 @@ export function AdminDrawerContent() {
   const currentRoute = state?.routes?.[state.index]?.name ?? '';
   const active = currentRoute;
 
+  const role = (userData as { role?: string } | null)?.role ?? '';
+  const userDisplayName = displayName(userData?.name, 'Admin');
+  const visibleMenuItems = MENU_ITEMS.filter((item) => canAccess(role, item.key));
+
   const initials =
-    userData?.name
-      ?.split(' ')
+    userDisplayName
+      .split(' ')
       .map((n: string) => n[0])
       .join('')
       .toUpperCase()
@@ -90,13 +96,13 @@ export function AdminDrawerContent() {
           {theme.schoolName || 'Smart Campus'}
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 6, fontStyle: 'italic' }} numberOfLines={1}>
-          {userData?.name || 'Admin'}
+          {userDisplayName}
         </Text>
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontFamily: 'Courier', marginTop: 8 }}>{schoolCodeLabel}</Text>
       </View>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 12, paddingTop: 8, backgroundColor: '#FFFFFF' }} showsVerticalScrollIndicator={false}>
-        {MENU_ITEMS.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = active === item.key;
           return (
             <TouchableOpacity
@@ -150,7 +156,7 @@ export function AdminDrawerContent() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: PD.textDark, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
-              {userData?.name}
+              {userDisplayName}
             </Text>
             <Text style={{ color: PD.textMuted, fontSize: 12 }} numberOfLines={1}>
               {userData?.email}

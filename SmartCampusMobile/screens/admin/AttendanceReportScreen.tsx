@@ -15,7 +15,6 @@ const API = apiClient as any;
 const PRESETS = [
   { label: 'This Week', days: 7 },
   { label: 'This Month', days: 30 },
-  { label: 'Custom', days: 0 },
 ];
 
 interface DayRow {
