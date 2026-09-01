@@ -241,19 +241,36 @@ const GalleryScreen: React.FC = () => {
             ) : (
               <View style={{ width: 40, height: 40 }} />
             )}
-            <TouchableOpacity
-              onPress={() => setUploadModalVisible(true)}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name="cloud-upload-outline" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {isParent ? (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('MoreHome')}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="grid-outline" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                onPress={() => setUploadModalVisible(true)}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="cloud-upload-outline" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 26, marginTop: 12 }}>Gallery</Text>
           <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, marginTop: 6 }}>

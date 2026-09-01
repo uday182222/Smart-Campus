@@ -23,7 +23,7 @@ const GRID: GridItem[] = [
   { icon: 'calendar-clock', label: 'Appointments', color: '#3B82F6', action: 'nav', target: 'Appointments' },
   { icon: 'bell-ring', label: 'Notifications', color: '#F97316', action: 'home', target: 'Notifications' },
   { icon: 'cog-outline', label: 'Settings', color: '#6B7280', action: 'nav', target: 'Settings' },
-  { icon: 'help-circle', label: 'Help', color: '#14B8A6', action: 'soon' },
+  { icon: 'help-circle', label: 'Help', color: '#14B8A6', action: 'nav', target: 'Help' },
   { icon: 'shield-check', label: 'Privacy', color: '#22C55E', action: 'soon' },
 ];
 

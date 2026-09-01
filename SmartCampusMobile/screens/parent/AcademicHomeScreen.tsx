@@ -122,7 +122,7 @@ export default function AcademicHomeScreen() {
                 key={key}
                 onPress={() => {
                   if ('galleryAppointments' in q) {
-                    navigation.getParent()?.navigate('ParentGallery', { screen: 'Appointments' });
+                    navigation.navigate('Appointments');
                   } else {
                     navigation.navigate(q.nav);
                   }

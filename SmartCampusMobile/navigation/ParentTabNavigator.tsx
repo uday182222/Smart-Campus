@@ -16,6 +16,8 @@ import FeeStatusScreen from '../screens/parent/FeeStatusScreen';
 import BusTrackingScreen from '../screens/parent/BusTrackingScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import AppointmentsScreen from '../screens/parent/AppointmentsScreen';
+import MoreHomeScreen from '../screens/parent/MoreHomeScreen';
+import HelpScreen from '../screens/parent/HelpScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createStackNavigator();
@@ -55,6 +57,7 @@ function AcademicStack() {
       <AcademicStackNav.Screen name="Homework" component={ParentHomeworkScreen} />
       <AcademicStackNav.Screen name="ReportCard" component={ReportCardScreen} />
       <AcademicStackNav.Screen name="Calendar" component={ParentCalendarScreen} />
+      <AcademicStackNav.Screen name="Appointments" component={AppointmentsScreen} />
     </AcademicStackNav.Navigator>
   );
 }
@@ -80,6 +83,8 @@ function GalleryStack() {
     <GalleryStackNav.Navigator screenOptions={SO}>
       <GalleryStackNav.Screen name="Gallery" component={GalleryScreen} />
       <GalleryStackNav.Screen name="Appointments" component={AppointmentsScreen} />
+      <GalleryStackNav.Screen name="MoreHome" component={MoreHomeScreen} />
+      <GalleryStackNav.Screen name="Help" component={HelpScreen} />
       <GalleryStackNav.Screen name="Settings" component={SettingsScreen} />
       <GalleryStackNav.Screen
         name="Profile"

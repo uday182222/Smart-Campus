@@ -65,6 +65,7 @@ model School {
   schoolEvents          SchoolEvent[]
   registrationRequests  RegistrationRequest[]
   groups                Group[]
+  concerns              Concern[]
   
   @@map("schools")
 }
@@ -101,6 +102,7 @@ model User {
   activityLogs          ActivityLog[]
   createdGroups         Group[]         @relation("GroupCreator")
   groupMemberships      GroupMember[]
+  concerns              Concern[]
   
   @@index([schoolId])
   @@index([email])
@@ -655,6 +657,24 @@ model SystemSettings {
   updatedBy             String?         @map("updated_by")
   
   @@map("system_settings")
+}
+
+model Concern {
+  id                    String          @id @default(uuid())
+  userId                String          @map("user_id")
+  schoolId              String          @map("school_id")
+  subject               String
+  message               String          @db.Text
+  status                String          @default("open")
+  createdAt             DateTime        @default(now()) @map("created_at")
+
+  user                  User            @relation(fields: [userId], references: [id])
+  school                School          @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([userId])
+  @@index([status])
+  @@map("concerns")
 }
 
 model SupportTicket {

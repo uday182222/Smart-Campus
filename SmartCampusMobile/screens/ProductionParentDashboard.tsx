@@ -23,6 +23,8 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  CalendarClock,
+  LayoutGrid,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -488,6 +490,90 @@ export default function ProductionParentDashboard() {
               </View>
             </TouchableOpacity>
           </View>
+        </Animated.View>
+
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            flexDirection: 'row',
+            gap: 12,
+            paddingHorizontal: T.px,
+            marginTop: 14,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() =>
+              navigation.navigate('ParentGallery' as never, {
+                screen: 'Appointments',
+                merge: true,
+              } as never)
+            }
+            style={{
+              flex: 1,
+              backgroundColor: T.card,
+              borderRadius: T.radius.lg,
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              ...T.shadowSm,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: T.radius.sm,
+                backgroundColor: T.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CalendarClock size={18} color={T.primary} strokeWidth={1.8} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }}>Appointments</Text>
+              <Text style={{ fontSize: 11, color: T.textPlaceholder, marginTop: 2 }}>Book with teachers</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() =>
+              navigation.navigate('ParentGallery' as never, {
+                screen: 'MoreHome',
+                merge: true,
+              } as never)
+            }
+            style={{
+              flex: 1,
+              backgroundColor: T.card,
+              borderRadius: T.radius.lg,
+              padding: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              ...T.shadowSm,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: T.radius.sm,
+                backgroundColor: T.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <LayoutGrid size={18} color={T.primary} strokeWidth={1.8} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }}>More</Text>
+              <Text style={{ fontSize: 11, color: T.textPlaceholder, marginTop: 2 }}>Gallery, help & settings</Text>
+            </View>
+          </TouchableOpacity>
         </Animated.View>
 
         <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: T.px, marginTop: 22 }}>
