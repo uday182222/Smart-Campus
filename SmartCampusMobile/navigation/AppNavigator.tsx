@@ -42,6 +42,7 @@ import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 // Admin screens
 import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import ClassManagementScreen from '../screens/admin/ClassManagementScreen';
@@ -544,6 +545,7 @@ const SuperAdminNavigator = () => (
     <SuperAdminStack.Screen name="SchoolUsers" component={SchoolUsersScreen} />
     <SuperAdminStack.Screen name="Profile" component={ProfileScreen} />
     <SuperAdminStack.Screen name="Settings" component={SettingsScreen} />
+    <SuperAdminStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
   </SuperAdminStack.Navigator>
 );
 

@@ -22,6 +22,7 @@ import GroupsScreen from '../screens/teacher/GroupsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createStackNavigator();
@@ -102,6 +103,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="TeacherDashboard" component={TeacherDashboard} />
       <HomeStackNav.Screen name="Profile" component={ProfileScreen} />
       <HomeStackNav.Screen name="Settings" component={SettingsScreen} />
+      <HomeStackNav.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     </HomeStackNav.Navigator>
   );
 }
@@ -145,6 +147,7 @@ function MoreStack() {
       <MoreStackNav.Screen name="Calendar" component={CalendarScreen} />
       <MoreStackNav.Screen name="Profile" component={ProfileScreen} />
       <MoreStackNav.Screen name="Settings" component={SettingsScreen} />
+      <MoreStackNav.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     </MoreStackNav.Navigator>
   );
 }

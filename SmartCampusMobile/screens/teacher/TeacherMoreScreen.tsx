@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Clock, PenSquare, User, Settings, HelpCircle, LogOut, ChevronRight, Users } from 'lucide-react-native';
+import { Calendar, Clock, PenSquare, User, Settings, HelpCircle, LogOut, ChevronRight, Users, ShieldCheck } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
@@ -112,6 +112,36 @@ export default function TeacherMoreScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16, marginTop: 24, marginBottom: 12 }}>Legal</Text>
+        <TouchableOpacity
+          onPress={() => safeNavigate(() => navigation.navigate('PrivacyPolicy'))}
+          style={{
+            backgroundColor: T.card,
+            borderRadius: T.radius.xxl,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 12,
+            ...T.shadowSm,
+          }}
+          activeOpacity={0.85}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              backgroundColor: T.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ShieldCheck size={22} color={T.primary} strokeWidth={1.8} />
+          </View>
+          <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 16, marginLeft: 12, flex: 1 }}>Privacy Policy</Text>
+          <ChevronRight size={22} color={T.textMuted} strokeWidth={1.8} />
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={logout}

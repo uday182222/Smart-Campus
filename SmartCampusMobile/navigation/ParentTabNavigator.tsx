@@ -19,6 +19,7 @@ import AppointmentsScreen from '../screens/parent/AppointmentsScreen';
 import TimetableScreen from '../screens/parent/TimetableScreen';
 import MoreHomeScreen from '../screens/parent/MoreHomeScreen';
 import HelpScreen from '../screens/parent/HelpScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createStackNavigator();
@@ -46,6 +47,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="Notifications" component={ParentNotificationsScreen} options={horizontalPush} />
       <HomeStackNav.Screen name="Profile" component={ProfileScreen} options={horizontalPush} />
       <HomeStackNav.Screen name="Settings" component={SettingsScreen} options={horizontalPush} />
+      <HomeStackNav.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={horizontalPush} />
     </HomeStackNav.Navigator>
   );
 }
@@ -88,6 +90,7 @@ function GalleryStack() {
       <GalleryStackNav.Screen name="MoreHome" component={MoreHomeScreen} />
       <GalleryStackNav.Screen name="Help" component={HelpScreen} />
       <GalleryStackNav.Screen name="Settings" component={SettingsScreen} />
+      <GalleryStackNav.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <GalleryStackNav.Screen
         name="Profile"
         component={ProfileScreen}

@@ -11,6 +11,7 @@ import TripSummaryScreen from '../screens/transport/TripSummaryScreen';
 import TripHistoryScreen from '../screens/transport/TripHistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 
 const Stack = createStackNavigator();
 
@@ -33,6 +34,7 @@ export function BusHelperNavigator() {
       <Stack.Screen name="TripHistory" component={TripHistoryScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     </Stack.Navigator>
   );
 }

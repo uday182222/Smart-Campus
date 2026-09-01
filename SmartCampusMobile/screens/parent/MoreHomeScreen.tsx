@@ -8,10 +8,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { ShieldCheck, ChevronRight } from 'lucide-react-native';
 import { FloatingNav } from '../../components/ui/FloatingNav';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { PD, cardShadow, darkenHex } from '../../constants/parentDesign';
+import { T } from '../../constants/theme';
 
 type GridItem =
   | { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; color: string; action: 'nav'; target: string }
@@ -24,7 +26,6 @@ const GRID: GridItem[] = [
   { icon: 'bell-ring', label: 'Notifications', color: '#F97316', action: 'home', target: 'Notifications' },
   { icon: 'cog-outline', label: 'Settings', color: '#6B7280', action: 'nav', target: 'Settings' },
   { icon: 'help-circle', label: 'Help', color: '#14B8A6', action: 'nav', target: 'Help' },
-  { icon: 'shield-check', label: 'Privacy', color: '#22C55E', action: 'soon' },
 ];
 
 export default function MoreHomeScreen() {
@@ -108,6 +109,27 @@ export default function MoreHomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PrivacyPolicy')}
+          style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', marginTop: 8 }, cardShadow]}
+          activeOpacity={0.85}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              backgroundColor: T.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ShieldCheck size={22} color={T.primary} strokeWidth={1.8} />
+          </View>
+          <Text style={{ color: PD.textDark, fontWeight: '800', fontSize: 16, marginLeft: 12, flex: 1 }}>Privacy Policy</Text>
+          <ChevronRight size={22} color={T.textMuted} strokeWidth={1.8} />
+        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={logout}

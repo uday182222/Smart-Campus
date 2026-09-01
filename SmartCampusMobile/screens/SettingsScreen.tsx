@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -153,31 +153,9 @@ const SettingsScreen: React.FC = () => {
             <Text style={{ color: LT.textPrimary, fontSize: 15, flex: 1 }}>Version</Text>
             <Text style={{ color: LT.textMuted, fontSize: 14 }}>1.0.0</Text>
           </TouchableOpacity>
-          <View style={{ height: 1, backgroundColor: LT.cardBorder, marginHorizontal: 16 }} />
           <TouchableOpacity
             style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }}
-            onPress={() => Linking.openURL('https://example.com/terms').catch(() => {})}
-          >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: LT.primaryLight,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-              }}
-            >
-              <Ionicons name="document-text-outline" size={18} color={LT.primary} />
-            </View>
-            <Text style={{ color: LT.textPrimary, fontSize: 15, flex: 1 }}>Terms of Service</Text>
-            <Ionicons name="chevron-forward" size={20} color={LT.primary} />
-          </TouchableOpacity>
-          <View style={{ height: 1, backgroundColor: LT.cardBorder, marginHorizontal: 16 }} />
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 }}
-            onPress={() => Linking.openURL('https://example.com/privacy').catch(() => {})}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
           >
             <View
               style={{
