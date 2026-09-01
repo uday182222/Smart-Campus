@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Modal, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -24,6 +24,55 @@ function subjectStyle(sub: string): { icon: keyof typeof MaterialCommunityIcons.
   if (s.includes('sci')) return { icon: 'flask-outline', color: '#16A34A' };
   if (s.includes('eng')) return { icon: 'alphabetical', color: '#EA580C' };
   return { icon: 'book-open-variant', color: '#6366F1' };
+}
+
+function homeworkStatus(h: any): string {
+  return (h.submissionStatus ?? h.status ?? 'PENDING').toUpperCase();
+}
+
+function homeworkTeacherName(h: any): string {
+  return h.teacherName ?? h.teacher?.name ?? '—';
+}
+
+function formatDueDate(h: any): string {
+  if (!h.dueDate) return '—';
+  try {
+    return new Date(h.dueDate).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
+}
+
+function getAttachmentLink(h: any): string | null {
+  if (h.attachmentUrl) return h.attachmentUrl;
+  if (typeof h.attachment === 'string' && h.attachment.trim()) return h.attachment.trim();
+  const att = h.attachments;
+  if (!att) return null;
+  if (typeof att === 'string' && att.trim()) return att.trim();
+  if (Array.isArray(att) && att.length > 0) {
+    const first = att[0];
+    if (typeof first === 'string') return first;
+    return first?.url ?? first?.uri ?? first?.link ?? null;
+  }
+  if (typeof att === 'object' && att !== null) {
+    return att.url ?? att.uri ?? att.link ?? null;
+  }
+  return null;
+}
+
+function statusBadgeStyle(st: string): { bg: string; fg: string; label: string } {
+  if (st === 'SUBMITTED') {
+    return { bg: T.successTint, fg: T.success, label: 'Done' };
+  }
+  if (st === 'OVERDUE') {
+    return { bg: T.dangerTint, fg: T.danger, label: 'Overdue' };
+  }
+  return { bg: T.primaryLight, fg: T.primary, label: 'Pending' };
 }
 
 export default function ParentHomeworkScreen() {
@@ -54,6 +103,7 @@ export default function ParentHomeworkScreen() {
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedHw, setSelectedHw] = useState<any>(null);
 
   const load = useCallback(async () => {
     if (!studentId) return;
@@ -72,6 +122,12 @@ export default function ParentHomeworkScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (list.length > 0) {
+      console.log('[ParentHomework] sample homework object:', list[0]);
+    }
+  }, [list]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -147,7 +203,7 @@ export default function ParentHomeworkScreen() {
           <Text style={{ color: PD.textMuted }}>Loading…</Text>
         ) : (
           filtered.map((h: any) => {
-            const st = (h.submissionStatus ?? h.status ?? 'PENDING').toUpperCase();
+            const st = homeworkStatus(h);
             const sub = subjectStyle(h.subject || '');
             const pill =
               st === 'SUBMITTED'
@@ -156,16 +212,21 @@ export default function ParentHomeworkScreen() {
                   ? { bg: '#FEE2E2', fg: '#DC2626', t: '⚠ Overdue' }
                   : { bg: '#FEF3C7', fg: '#D97706', t: 'Pending' };
             return (
-              <View key={h.id || h.title} style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 20, marginBottom: 16 }, cardShadow]}>
+              <TouchableOpacity
+                key={h.id || h.title}
+                activeOpacity={0.85}
+                onPress={() => setSelectedHw(h)}
+                style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 20, marginBottom: 16 }, cardShadow]}
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                   <View style={[{ width: 52, height: 52, borderRadius: 26, backgroundColor: sub.color + '22', alignItems: 'center', justifyContent: 'center' }, cardShadow]}>
                     <MaterialCommunityIcons name={sub.icon} size={26} color={sub.color} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={{ color: PD.textDark, fontWeight: '900', fontSize: 18, letterSpacing: -0.3 }} numberOfLines={2}>
-                      {h.title}
+                      {h.title || '—'}
                     </Text>
-                    <Text style={{ color: PD.textMuted, fontSize: 11, marginTop: 4 }}>{h.teacher?.name ?? 'Teacher'}</Text>
+                    <Text style={{ color: PD.textMuted, fontSize: 11, marginTop: 4 }}>{homeworkTeacherName(h)}</Text>
                   </View>
                   <View style={{ position: 'absolute', right: 0, top: 0, backgroundColor: pill.bg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
                     <Text style={{ color: pill.fg, fontSize: 10, fontWeight: '900' }}>{pill.t}</Text>
@@ -190,11 +251,120 @@ export default function ParentHomeworkScreen() {
                     <View style={{ width: '40%', height: 3, backgroundColor: primary, borderRadius: 2 }} />
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
       </ScrollView>
+
+      <Modal visible={selectedHw !== null} transparent animationType="slide" onRequestClose={() => setSelectedHw(null)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          onPress={() => setSelectedHw(null)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: T.card,
+              borderTopLeftRadius: T.radius.xxl,
+              borderTopRightRadius: T.radius.xxl,
+              paddingHorizontal: 24,
+              paddingTop: 12,
+              paddingBottom: 32,
+              maxHeight: '88%',
+            }}
+            onPress={() => {}}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                backgroundColor: T.inputBorder,
+                borderRadius: 2,
+                alignSelf: 'center',
+                marginBottom: 20,
+              }}
+            />
+
+            {selectedHw ? (() => {
+              const st = homeworkStatus(selectedHw);
+              const badge = statusBadgeStyle(st);
+              const attachment = getAttachmentLink(selectedHw);
+              return (
+                <>
+                  <Text style={{ fontSize: 20, fontWeight: '900', color: T.textDark }}>
+                    {selectedHw.title || '—'}
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                    <Text style={{ color: T.textMuted, fontSize: 14 }}>
+                      {selectedHw.subject || '—'}
+                    </Text>
+                    <Text style={{ color: T.textMuted, fontSize: 14 }}>·</Text>
+                    <Text style={{ color: T.textMuted, fontSize: 14 }}>
+                      Due {formatDueDate(selectedHw)}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={{
+                      alignSelf: 'flex-start',
+                      backgroundColor: badge.bg,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: T.radius.full,
+                      marginTop: 12,
+                    }}
+                  >
+                    <Text style={{ color: badge.fg, fontWeight: '800', fontSize: 12 }}>{badge.label}</Text>
+                  </View>
+
+                  <Text style={{ color: T.textMuted, fontSize: 12, fontWeight: '700', marginTop: 20, marginBottom: 8 }}>
+                    Instructions
+                  </Text>
+                  <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: T.textBody, fontSize: 15, lineHeight: 22 }}>
+                      {selectedHw.description?.trim() ? selectedHw.description : '—'}
+                    </Text>
+                  </ScrollView>
+
+                  {attachment ? (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(attachment).catch(() => {})}
+                      style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8 }}
+                    >
+                      <MaterialCommunityIcons name="paperclip" size={18} color={T.primary} />
+                      <Text style={{ color: T.primary, fontWeight: '700', fontSize: 14, flex: 1 }} numberOfLines={2}>
+                        View attachment
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8 }}>
+                    <MaterialCommunityIcons name="account-outline" size={18} color={T.textMuted} />
+                    <Text style={{ color: T.textMuted, fontSize: 14 }}>
+                      Teacher: {homeworkTeacherName(selectedHw)}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => setSelectedHw(null)}
+                    activeOpacity={0.85}
+                    style={{
+                      backgroundColor: T.primary,
+                      borderRadius: T.radius.full,
+                      paddingVertical: 16,
+                      alignItems: 'center',
+                      marginTop: 24,
+                    }}
+                  >
+                    <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 16 }}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            })() : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
