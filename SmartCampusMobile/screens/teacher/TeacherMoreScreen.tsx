@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, User, Settings, HelpCircle, LogOut, ChevronRight, Users } from 'lucide-react-native';
+import { Calendar, Clock, PenSquare, User, Settings, HelpCircle, LogOut, ChevronRight, Users } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
@@ -13,6 +13,8 @@ import { T } from '../../constants/theme';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
 
 const MENU: Array<{ key: string; label: string; Icon: any; screen: string }> = [
+  { key: 'MyTimetable', label: 'My Timetable', Icon: Clock, screen: 'MyTimetable' },
+  { key: 'TimetableEdit', label: 'Manage Timetable', Icon: PenSquare, screen: 'TimetableEdit' },
   { key: 'Groups', label: 'Groups', Icon: Users, screen: 'Groups' },
   { key: 'Calendar', label: 'Calendar', Icon: Calendar, screen: 'Calendar' },
   { key: 'Profile', label: 'Profile', Icon: User, screen: 'Profile' },
@@ -76,6 +78,14 @@ export default function TeacherMoreScreen() {
             <TouchableOpacity
               key={item.key}
               onPress={() => {
+                if (item.screen === 'MyTimetable') {
+                  safeNavigate(() => navigation.navigate('MyTimetable'));
+                  return;
+                }
+                if (item.screen === 'TimetableEdit') {
+                  safeNavigate(() => navigation.navigate('TimetableEdit'));
+                  return;
+                }
                 if (item.screen === 'Groups') {
                   safeNavigate(() => navigation.navigate('Groups'));
                   return;

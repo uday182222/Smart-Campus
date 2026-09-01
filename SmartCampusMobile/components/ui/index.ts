@@ -37,6 +37,9 @@ export type { AppHeaderProps } from './AppHeader';
 export { DateStrip } from './DateStrip';
 export type { DateStripProps } from './DateStrip';
 
+export { TimetableDayView, getDefaultTimetableDay } from './TimetableDayView';
+export type { TimetableDayViewProps } from './TimetableDayView';
+
 export { LightHeader } from './LightHeader';
 export { LightCard } from './LightCard';
 export { LightButton } from './LightButton';

@@ -16,6 +16,7 @@ import FeeStatusScreen from '../screens/parent/FeeStatusScreen';
 import BusTrackingScreen from '../screens/parent/BusTrackingScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import AppointmentsScreen from '../screens/parent/AppointmentsScreen';
+import TimetableScreen from '../screens/parent/TimetableScreen';
 import MoreHomeScreen from '../screens/parent/MoreHomeScreen';
 import HelpScreen from '../screens/parent/HelpScreen';
 
@@ -58,6 +59,7 @@ function AcademicStack() {
       <AcademicStackNav.Screen name="ReportCard" component={ReportCardScreen} />
       <AcademicStackNav.Screen name="Calendar" component={ParentCalendarScreen} />
       <AcademicStackNav.Screen name="Appointments" component={AppointmentsScreen} />
+      <AcademicStackNav.Screen name="Timetable" component={TimetableScreen} />
     </AcademicStackNav.Navigator>
   );
 }

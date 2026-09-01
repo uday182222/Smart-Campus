@@ -17,12 +17,13 @@ import { PD, cardShadow, darkenHex, statNumber } from '../../constants/parentDes
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const QUICK: (
-  | { icon: 'book-open-variant' | 'chart-bar' | 'calendar-check' | 'calendar-month' | 'calendar-clock'; label: string; colorKey: string; nav: 'Homework' | 'ReportCard' | 'Attendance' | 'Calendar' }
+  | { icon: 'book-open-variant' | 'chart-bar' | 'calendar-check' | 'calendar-month' | 'calendar-clock' | 'calendar-week'; label: string; colorKey: string; nav: 'Homework' | 'ReportCard' | 'Attendance' | 'Calendar' | 'Timetable' }
   | { icon: 'calendar-clock'; label: string; colorKey: string; galleryAppointments: true }
 )[] = [
   { icon: 'book-open-variant', label: 'Homework', colorKey: 'primary', nav: 'Homework' },
   { icon: 'chart-bar', label: 'Report Card', colorKey: 'success', nav: 'ReportCard' },
   { icon: 'calendar-check', label: 'Attendance', colorKey: 'warning', nav: 'Attendance' },
+  { icon: 'calendar-week', label: 'Timetable', colorKey: 'primary', nav: 'Timetable' },
   { icon: 'calendar-month', label: 'Calendar', colorKey: 'info', nav: 'Calendar' },
   { icon: 'calendar-clock', label: 'Appointments', colorKey: 'info', galleryAppointments: true },
 ];
