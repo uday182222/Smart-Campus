@@ -13,6 +13,7 @@ import { apiClient } from '../services/apiClient';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GraduationCap } from 'lucide-react-native';
 import { T } from '../constants/theme';
+import { ErrorBoundary } from '../utils/errorHandling';
 
 // Import production screens (STABLE)
 import ProductionLoginScreen from '../screens/ProductionLoginScreen';
@@ -578,62 +579,64 @@ const AppNavigator = () => {
     loading 
   });
 
-  if (loading) {
-    return <AppSplash />;
-  }
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!currentUser ? (
-          <>
-            <Stack.Screen name="Login" component={ProductionLoginScreen} />
-            <Stack.Screen name="Registration" component={RegistrationScreen} />
-            <Stack.Screen name="SuperAdminLogin" component={SuperAdminLoginScreen} options={{ headerShown: false }} />
-          </>
-        ) : (
-          // Main App Stack based on user role
-          (() => {
-            const role = userData?.role?.toLowerCase();
-            switch (role) {
-              case 'super_admin':
-                return (
-                  <Stack.Screen name="SuperAdminMain" component={SuperAdminNavigator} />
-                );
-              case 'school_admin':
-              case 'admin':
-              case 'principal':
-                return (
-                  <Stack.Screen name="AdminMain" component={AdminNavigator} />
-                );
-              case 'teacher':
-                return (
-                  <Stack.Screen name="TeacherMain" component={TeacherNavigator} />
-                );
-              case 'parent':
-                /* Bottom tabs + drawer: see ParentNavigator → ParentTabNavigator */
-                return (
-                  <Stack.Screen name="ParentMain" component={ParentNavigator} />
-                );
-              case 'student':
-                return (
-                  <Stack.Screen name="StudentMain" component={ProductionStudentDashboard} />
-                );
-              case 'bus_helper':
-              case 'BUS_HELPER':
-                return (
-                  <Stack.Screen name="HelperMain" component={BusHelperNavigator} />
-                );
-              default:
-                console.log('Unknown role:', userData?.role);
-                return (
-                  <Stack.Screen name="Login" component={ProductionLoginScreen} />
-                );
-            }
-          })()
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      {loading ? (
+        <AppSplash />
+      ) : (
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {!currentUser ? (
+              <>
+                <Stack.Screen name="Login" component={ProductionLoginScreen} />
+                <Stack.Screen name="Registration" component={RegistrationScreen} />
+                <Stack.Screen name="SuperAdminLogin" component={SuperAdminLoginScreen} options={{ headerShown: false }} />
+              </>
+            ) : (
+              // Main App Stack based on user role
+              (() => {
+                const role = userData?.role?.toLowerCase();
+                switch (role) {
+                  case 'super_admin':
+                    return (
+                      <Stack.Screen name="SuperAdminMain" component={SuperAdminNavigator} />
+                    );
+                  case 'school_admin':
+                  case 'admin':
+                  case 'principal':
+                    return (
+                      <Stack.Screen name="AdminMain" component={AdminNavigator} />
+                    );
+                  case 'teacher':
+                    return (
+                      <Stack.Screen name="TeacherMain" component={TeacherNavigator} />
+                    );
+                  case 'parent':
+                    /* Bottom tabs + drawer: see ParentNavigator → ParentTabNavigator */
+                    return (
+                      <Stack.Screen name="ParentMain" component={ParentNavigator} />
+                    );
+                  case 'student':
+                    return (
+                      <Stack.Screen name="StudentMain" component={ProductionStudentDashboard} />
+                    );
+                  case 'bus_helper':
+                  case 'BUS_HELPER':
+                    return (
+                      <Stack.Screen name="HelperMain" component={BusHelperNavigator} />
+                    );
+                  default:
+                    console.log('Unknown role:', userData?.role);
+                    return (
+                      <Stack.Screen name="Login" component={ProductionLoginScreen} />
+                    );
+                }
+              })()
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      )}
+    </ErrorBoundary>
   );
 };
 

@@ -6,9 +6,9 @@
 import React from 'react';
 import { Alert, View, Text, TouchableOpacity, Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { MaterialIcons } from '@expo/vector-icons';
+import { AlertTriangle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Sentry from 'sentry-expo';
+import { T } from '../constants/theme';
 
 export type ErrorType = 
   | 'network'
@@ -36,22 +36,10 @@ export interface ErrorLog {
   reportedToServer: boolean;
 }
 
-// Initialize Sentry (if configured)
+// Initialize Sentry (optional — sentry-expo not bundled in this project)
 export const initializeErrorTracking = () => {
   if (__DEV__) {
     console.log('Error tracking disabled in development');
-    return;
-  }
-
-  try {
-    Sentry.init({
-      dsn: 'your-sentry-dsn-here',
-      enableInExpoDevelopment: false,
-      debug: false,
-      tracesSampleRate: 1.0,
-    });
-  } catch (error) {
-    console.error('Failed to initialize Sentry:', error);
   }
 };
 
@@ -72,7 +60,7 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to error tracking service
+    console.error('ErrorBoundary caught:', error, errorInfo.componentStack);
     logError(createAppError('unknown', error.message, error, {
       componentStack: errorInfo.componentStack,
     }));
@@ -89,24 +77,21 @@ export class ErrorBoundary extends React.Component<
       }
 
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <MaterialIcons name="error-outline" size={64} color="#E74C3C" />
-          <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 20, marginBottom: 10 }}>
-            Oops! Something went wrong
-          </Text>
-          <Text style={{ textAlign: 'center', color: '#7F8C8D', marginBottom: 20 }}>
-            We're sorry for the inconvenience. Please try again.
-          </Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: T.bg }}>
+          <AlertTriangle size={40} color={T.danger} strokeWidth={1.8} />
+          <Text style={{ fontSize: 18, fontWeight: '800', color: T.textDark, marginTop: 16 }}>Something went wrong</Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 8, textAlign: 'center' }}>Please restart the app.</Text>
           <TouchableOpacity
             style={{
-              backgroundColor: '#4ECDC4',
+              backgroundColor: T.primary,
               paddingHorizontal: 24,
-              paddingVertical: 12,
-              borderRadius: 8,
+              paddingVertical: 14,
+              borderRadius: T.radius.full,
+              marginTop: 24,
             }}
             onPress={this.handleRetry}
           >
-            <Text style={{ color: '#FFF', fontWeight: '600' }}>Try Again</Text>
+            <Text style={{ color: T.textWhite, fontWeight: '700', fontSize: 15 }}>Try Again</Text>
           </TouchableOpacity>
         </View>
       );
@@ -217,20 +202,8 @@ export const handleAPIError = (error: any): AppError => {
  */
 export const logError = async (error: AppError): Promise<void> => {
   try {
-    // Log to Sentry
     if (!__DEV__) {
-      Sentry.Native.captureException(error.originalError || new Error(error.message), {
-        tags: {
-          errorType: error.type,
-        },
-        contexts: {
-          error: {
-            ...error.context,
-            timestamp: error.timestamp.toISOString(),
-            recoverable: error.recoverable,
-          },
-        },
-      });
+      console.error('[AppError]', error.type, error.message, error.context);
     }
 
     // Store locally

@@ -75,7 +75,6 @@ export default function FeeReportScreen() {
   const [addFeeName, setAddFeeName] = useState('');
   const [addAmount, setAddAmount] = useState('');
   const [addDueDate, setAddDueDate] = useState('');
-  const [addStudentId, setAddStudentId] = useState('');
   const [classFeeName, setClassFeeName] = useState('');
   const [classAmount, setClassAmount] = useState('');
   const [classDueDate, setClassDueDate] = useState('');
@@ -152,14 +151,18 @@ export default function FeeReportScreen() {
       Alert.alert('Required', 'Fee name and amount are required.');
       return;
     }
+    const parsedAmount = Number(addAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Invalid amount', 'Amount must be a positive number.');
+      return;
+    }
     setAddSubmitting(true);
     try {
-      await API.post('/admin/fees', { name: addFeeName.trim(), amount: Number(addAmount), dueDate: addDueDate || undefined });
+      await API.post('/admin/fees', { name: addFeeName.trim(), amount: parsedAmount, dueDate: addDueDate || undefined });
       setAddModalVisible(false);
       setAddFeeName('');
       setAddAmount('');
       setAddDueDate('');
-      setAddStudentId('');
       await load();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to add fee');
@@ -375,8 +378,10 @@ export default function FeeReportScreen() {
       <Modal visible={addModalVisible} transparent animationType="slide">
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }} onPress={() => setAddModalVisible(false)}>
           <Pressable style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }} onPress={(e) => e.stopPropagation()}>
-            <Text style={{ color: T.textDark, fontSize: 22, fontWeight: '900' }}>Add Fee Entry</Text>
-            <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 }}>for individual student</Text>
+            <Text style={{ color: T.textDark, fontSize: 22, fontWeight: '900' }}>Add Fee Structure</Text>
+            <Text style={{ color: T.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 }}>
+              Creates a school-wide fee template applied to all students
+            </Text>
             <TextInput style={{ backgroundColor: T.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: T.textDark, marginTop: 16, borderWidth: 1.5, borderColor: T.inputBorder }} placeholder="Fee name (e.g. Term 1 Fee)" placeholderTextColor={T.textPlaceholder} value={addFeeName} onChangeText={setAddFeeName} />
             <TextInput style={{ backgroundColor: T.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: T.textDark, marginTop: 8, borderWidth: 1.5, borderColor: T.inputBorder }} placeholder="Amount" placeholderTextColor={T.textPlaceholder} value={addAmount} onChangeText={setAddAmount} keyboardType="numeric" />
             <TextInput style={{ backgroundColor: T.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, color: T.textDark, marginTop: 8, borderWidth: 1.5, borderColor: T.inputBorder }} placeholder="Due date (YYYY-MM-DD)" placeholderTextColor={T.textPlaceholder} value={addDueDate} onChangeText={setAddDueDate} />

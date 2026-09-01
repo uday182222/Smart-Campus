@@ -19,9 +19,28 @@ interface AnnouncementItem {
   id: string;
   title: string;
   message: string;
-  targetAudience: string | string[];
+  targetAudience: string | string[] | Record<string, unknown>;
   createdAt: string;
   deliveryCount?: number;
+}
+
+const audienceLabels = (raw: unknown): string[] => {
+  if (!raw) return ['All'];
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if (typeof raw === 'string') return [raw];
+  if (typeof raw === 'object') {
+    const keys = Object.keys(raw as Record<string, unknown>).filter(
+      (k) => (raw as Record<string, unknown>)[k] === true || (raw as Record<string, unknown>)[k] === 'true',
+    );
+    return keys.length ? keys : ['All'];
+  }
+  return ['All'];
+};
+
+function formatAudienceLabel(label: string): string {
+  const s = label.replace(/_/g, ' ').trim();
+  if (!s) return 'All';
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -206,7 +225,7 @@ export default function AnnouncementsScreen() {
                 {item.message}
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
-                {(Array.isArray(item.targetAudience) ? item.targetAudience : [item.targetAudience]).map((a) => (
+                {audienceLabels(item.targetAudience).map((a) => (
                   <View
                     key={String(a)}
                     style={{
@@ -220,7 +239,7 @@ export default function AnnouncementsScreen() {
                       borderColor: T.inputBorder,
                     }}
                   >
-                    <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>{a}</Text>
+                    <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>{formatAudienceLabel(a)}</Text>
                   </View>
                 ))}
                 <Text style={{ color: T.textMuted, fontSize: 12, marginLeft: 'auto' }}>{formatTimeAgo(item.createdAt)}</Text>

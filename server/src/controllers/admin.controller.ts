@@ -1,10 +1,11 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { logger } from '../utils/logger';
 import { AppError, NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
 import { AuthRequest } from '../middleware/auth';
 import { CognitoService } from '../services/cognito.service';
 import { NotificationService } from '../services/notification.service';
+import { normalizeTargetAudience } from '../utils/announcementAudience';
 import Papa from 'papaparse';
 
 /**
@@ -1363,7 +1364,7 @@ export const adminController = {
           title,
           message,
           priority,
-          targetAudience: parsedAudience as any,
+          targetAudience: normalizeTargetAudience(parsedAudience) as any,
           channels: ['push', 'in_app'] as any,
           scheduledFor: scheduledDate,
           status: isScheduled ? 'scheduled' : 'draft',
@@ -2035,7 +2036,7 @@ export const adminController = {
   /**
    * POST /admin/fees — Add fee entry (create FeeStructure for school)
    */
-  async addFeeEntry(req: AuthRequest, res: Response) {
+  async addFeeEntry(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const schoolId = req.user?.schoolId;
       if (!schoolId) throw new ForbiddenError('School access required');
@@ -2044,25 +2045,32 @@ export const adminController = {
         amount: number;
         dueDate?: string;
       };
-      if (!name || amount == null) throw new ValidationError('name and amount required');
+      const parsedAmount = Number(amount);
+      if (!name?.trim()) throw new ValidationError('Fee name is required');
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        throw new ValidationError('Amount must be a positive number');
+      }
+      let parsedDue: Date | null = null;
+      if (dueDate) {
+        const d = new Date(dueDate);
+        if (Number.isNaN(d.getTime())) throw new ValidationError('Invalid due date');
+        parsedDue = d;
+      }
       const structure = await prisma.feeStructure.create({
         data: {
           schoolId,
-          name,
+          name: name.trim(),
           type: 'tuition',
-          amount: Number(amount),
+          amount: parsedAmount,
           currency: 'INR',
-          dueDate: dueDate ? new Date(dueDate) : null,
+          dueDate: parsedDue,
           isActive: true,
         },
       });
       return res.status(201).json({ success: true, data: structure });
     } catch (error) {
       logger.error('Error addFeeEntry:', error);
-      if (error instanceof AppError) {
-        return res.status(error.statusCode).json({ success: false, message: error.message });
-      }
-      return res.status(500).json({ success: false, message: 'Internal server error' });
+      return next(error);
     }
   },
 

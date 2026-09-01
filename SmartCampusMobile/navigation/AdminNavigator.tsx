@@ -23,6 +23,7 @@ import RouteDetailScreen from '../screens/transport/RouteDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 
 const Stack = createStackNavigator();
 
@@ -60,6 +61,7 @@ function AdminStack() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+        <Stack.Screen name="Notifications" component={NotificationScreen} />
       </Stack.Navigator>
     </CustomDrawer>
   );

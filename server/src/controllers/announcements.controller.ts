@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { AppError, NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
 import { AuthRequest } from '../middleware/auth';
 import { NotificationService } from '../services/notification.service';
+import { normalizeTargetAudience } from '../utils/announcementAudience';
 
 /**
  * Announcements Controller
@@ -83,6 +84,8 @@ export const announcementsController = {
       // Determine status
       const status = scheduledDate && scheduledDate > new Date() ? 'scheduled' : 'draft';
 
+      const storedAudience = normalizeTargetAudience(targetAudience);
+
       // Create announcement
       const announcement = await prisma.announcement.create({
         data: {
@@ -90,7 +93,7 @@ export const announcementsController = {
           title,
           message,
           priority,
-          targetAudience: targetAudience as any,
+          targetAudience: storedAudience as any,
           channels: channels as any,
           scheduledFor: scheduledDate,
           status,

@@ -178,7 +178,9 @@ export default function ProductionAdminDashboard() {
                 <Text style={{ fontSize: 13, fontWeight: '700', color: T.textDark }}>{adminName}</Text>
               </View>
             </View>
-            <View
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.85}
               style={{
                 width: 44,
                 height: 44,
@@ -190,7 +192,7 @@ export default function ProductionAdminDashboard() {
               }}
             >
               <Bell size={20} color={T.textDark} strokeWidth={1.8} />
-            </View>
+            </TouchableOpacity>
           </View>
           <Text
             style={{
