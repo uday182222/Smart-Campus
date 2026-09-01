@@ -2,7 +2,7 @@
  * Teacher Enter Marks — dark + accent: exam setup, class/exam type chips, subject/max, student rows with marks input & grade badge, sticky save.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Modal,
+  Pressable,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,7 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import { ClassService } from '../../services/ClassService';
 import { apiClient } from '../../services/apiClient';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
@@ -35,9 +37,48 @@ function getGrade(marksStr: string, maxMarks: number, primary: string): { label:
   const pct = maxMarks > 0 ? (n / maxMarks) * 100 : 0;
   if (pct >= 90) return { label: 'A+', bg: T.successTint, text: T.success };
   if (pct >= 80) return { label: 'A', bg: T.successTint, text: T.success };
-  if (pct >= 70) return { label: 'B', bg: primary, text: '#FFFFFF' };
+  if (pct >= 70) return { label: 'B', bg: T.primaryLight, text: T.primary };
   if (pct >= 60) return { label: 'C', bg: T.warningTint, text: T.warning };
   return { label: 'F', bg: T.dangerTint, text: T.danger };
+}
+
+function apiErrorMessage(err: unknown): string {
+  const e = err as { response?: { data?: { message?: string } }; message?: string };
+  return e?.response?.data?.message ?? e?.message ?? 'Request failed';
+}
+
+type HistoryMark = {
+  id?: string;
+  marksObtained: number;
+  maxMarks?: number;
+  percentage?: string | number;
+  exam?: {
+    name?: string;
+    subject?: string;
+    examType?: string;
+    date?: string;
+    maxMarks?: number;
+  };
+};
+
+function formatExamDate(dateStr?: string): string {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
+
+function percentageColor(pct: number): string {
+  if (pct >= 75) return T.success;
+  if (pct >= 40) return T.warning;
+  return T.danger;
+}
+
+function formatExamTypeLabel(examType?: string): string {
+  if (!examType) return 'Exam';
+  return examType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function MarksEntryScreen() {
@@ -53,32 +94,64 @@ export default function MarksEntryScreen() {
   const [examType, setExamType] = useState('Quiz');
   const [totalMarks, setTotalMarks] = useState('100');
   const [marksMap, setMarksMap] = useState<Record<string, string>>({});
+  const [savedMarkIds, setSavedMarkIds] = useState<Record<string, string>>({});
   const [examId, setExamId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [classesError, setClassesError] = useState<string | null>(null);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<{ id: string; name: string } | null>(null);
+  const [historyMarks, setHistoryMarks] = useState<HistoryMark[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const loadExistingMarks = useCallback(async (eid: string) => {
+    try {
+      const res = await API.get(`/marks/${eid}`);
+      const root = (res as any)?.data ?? res;
+      const payload = root?.data ?? root;
+      const list = Array.isArray(payload?.marks) ? payload.marks : [];
+      const nextMap: Record<string, string> = {};
+      const nextIds: Record<string, string> = {};
+      for (const m of list) {
+        const sid = m.studentId as string | undefined;
+        if (!sid || m.marksObtained == null) continue;
+        nextMap[sid] = String(m.marksObtained);
+        if (m.id) nextIds[sid] = m.id;
+      }
+      setMarksMap(nextMap);
+      setSavedMarkIds(nextIds);
+    } catch (err: unknown) {
+      Alert.alert('Error', apiErrorMessage(err));
+    }
+  }, []);
 
   const loadClasses = useCallback(async () => {
+    setClassesError(null);
     try {
       const res = await ClassService.getTeacherClasses();
       const list = (res.data ?? []).map((c: any) => ({ id: c.id, name: `${c.name || ''} ${c.section || ''}`.trim(), section: c.section }));
       setClasses(list);
       if (list.length > 0 && !selectedClassId) setSelectedClassId(list[0].id);
-    } catch (_e) {
+    } catch (err: unknown) {
       setClasses([]);
+      setClassesError(apiErrorMessage(err));
     }
   }, [selectedClassId]);
 
   const loadStudents = useCallback(async () => {
     if (!selectedClassId) return;
     setLoading(true);
+    setStudentsError(null);
     try {
       const res = await ClassService.getTeacherClassStudents(selectedClassId);
       const list = (res.data ?? []).map((s: any) => ({ id: s.id, name: s.name ?? 'Student' }));
       setStudents(list);
       setMarksMap({});
+      setSavedMarkIds({});
       setExamId(null);
-    } catch (_e) {
+    } catch (err: unknown) {
       setStudents([]);
+      setStudentsError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -92,6 +165,37 @@ export default function MarksEntryScreen() {
     if (selectedClassId) loadStudents();
   }, [selectedClassId, loadStudents]);
 
+  useEffect(() => {
+    if (examId) loadExistingMarks(examId);
+  }, [examId, loadExistingMarks]);
+
+  const groupedHistory = useMemo(() => {
+    const map = new Map<string, HistoryMark[]>();
+    for (const m of historyMarks) {
+      const subj = m.exam?.subject?.trim() || 'Other';
+      if (!map.has(subj)) map.set(subj, []);
+      map.get(subj)!.push(m);
+    }
+    return Array.from(map.entries());
+  }, [historyMarks]);
+
+  const openHistory = useCallback(async (student: { id: string; name: string }) => {
+    setHistoryStudent(student);
+    setHistoryLoading(true);
+    setHistoryMarks([]);
+    try {
+      const res = await API.get(`/marks/student/${student.id}`);
+      const root = (res as any)?.data ?? res;
+      const payload = root?.data ?? root;
+      const list = Array.isArray(payload?.marks) ? payload.marks : [];
+      setHistoryMarks(list);
+    } catch (err: unknown) {
+      Alert.alert('Error', apiErrorMessage(err));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   const saveAll = async () => {
     if (!subject.trim()) {
       Alert.alert('Error', 'Subject is required.');
@@ -99,8 +203,8 @@ export default function MarksEntryScreen() {
     }
     const total = parseInt(totalMarks, 10) || 100;
     setSaving(true);
+    let eid = examId;
     try {
-      let eid = examId;
       if (!eid) {
         const createRes = await API.post('/exams', {
           classId: selectedClassId,
@@ -112,26 +216,53 @@ export default function MarksEntryScreen() {
           passingMarks: Math.floor(total * 0.4),
         });
         const data = (createRes as any)?.data ?? createRes;
-        eid = data?.exam?.id ?? data?.id;
+        const examPayload = data?.data ?? data;
+        eid = examPayload?.exam?.id ?? examPayload?.id ?? data?.exam?.id ?? data?.id;
         if (!eid) throw new Error('Failed to create exam');
         setExamId(eid);
       }
+
+      let succeeded = 0;
+      let failed = 0;
+
       for (const s of students) {
         const val = marksMap[s.id]?.trim();
         if (val === '') continue;
         const num = parseFloat(val);
         if (isNaN(num) || num < 0) continue;
-        await API.post('/marks', {
-          examId: eid,
-          studentId: s.id,
-          marksObtained: Math.min(num, total),
-          remarks: null,
-        });
+        const marksObtained = Math.min(num, total);
+        const existingMarkId = savedMarkIds[s.id];
+
+        try {
+          if (existingMarkId) {
+            await API.put(`/marks/${existingMarkId}`, { marksObtained, remarks: null });
+          } else {
+            await API.post('/marks', {
+              examId: eid,
+              studentId: s.id,
+              marksObtained,
+              remarks: null,
+            });
+          }
+          succeeded += 1;
+        } catch {
+          failed += 1;
+        }
       }
-      Alert.alert('Success', 'Marks saved.');
-      setMarksMap({});
-    } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to save marks.');
+
+      if (eid) await loadExistingMarks(eid);
+
+      if (succeeded === 0 && failed === 0) {
+        Alert.alert('Info', 'Enter at least one mark before saving.');
+      } else if (failed === 0) {
+        Alert.alert('Success', `Marks saved for ${succeeded} students.`);
+      } else if (succeeded > 0) {
+        Alert.alert('Partial save', `Saved ${succeeded}. Failed ${failed} — please retry.`);
+      } else {
+        Alert.alert('Error', `Failed ${failed} — please retry.`);
+      }
+    } catch (err: unknown) {
+      Alert.alert('Error', apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -164,6 +295,15 @@ export default function MarksEntryScreen() {
           <View style={{ width: 44, height: 44 }} />
         </View>
 
+        {classesError ? (
+          <View style={{ marginTop: 12, backgroundColor: T.dangerTint, borderRadius: 12, padding: 12 }}>
+            <Text style={{ color: T.danger, fontSize: 13, fontWeight: '600' }}>{classesError}</Text>
+            <TouchableOpacity onPress={loadClasses} style={{ marginTop: 8 }}>
+              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 13 }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -194,7 +334,7 @@ export default function MarksEntryScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} showsVerticalScrollIndicator={false}>
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 8, ...T.shadowSm }}>
           <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>Exam Setup</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
@@ -260,6 +400,15 @@ export default function MarksEntryScreen() {
         <Text style={{ color: T.textDark, fontSize: 20, fontWeight: '900', marginTop: 16 }}>Students</Text>
         <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2, marginBottom: 12 }}>Enter marks for each student</Text>
 
+        {studentsError ? (
+          <View style={{ backgroundColor: T.dangerTint, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+            <Text style={{ color: T.danger, fontSize: 13, fontWeight: '600' }}>{studentsError}</Text>
+            <TouchableOpacity onPress={loadStudents} style={{ marginTop: 8 }}>
+              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 13 }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {loading ? (
           <View style={{ gap: 8 }}>
             {[1, 2, 3, 4, 5].map((i) => (
@@ -271,12 +420,18 @@ export default function MarksEntryScreen() {
             const grade = getGrade(marksMap[s.id] ?? '', total, primary);
             return (
               <View key={s.id} style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...T.shadowSm }}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>{getInitials(s.name)}</Text>
-                </View>
-                <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15, flex: 1, marginLeft: 12 }} numberOfLines={1}>
-                  {s.name}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => openHistory(s)}
+                  activeOpacity={0.85}
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                >
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>{getInitials(s.name)}</Text>
+                  </View>
+                  <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15, flex: 1, marginLeft: 12 }} numberOfLines={1}>
+                    {s.name}
+                  </Text>
+                </TouchableOpacity>
                 <TextInput
                   style={{
                     width: 72,
@@ -308,15 +463,16 @@ export default function MarksEntryScreen() {
       <View
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: barBottomWithNav(insets.bottom),
           left: 0,
           right: 0,
           backgroundColor: T.card,
           paddingTop: 12,
           paddingHorizontal: T.px,
-          paddingBottom: 24,
+          paddingBottom: 12,
           borderTopWidth: 1,
           borderTopColor: T.inputBorder,
+          zIndex: 50,
           ...T.shadowLg,
         }}
       >
@@ -335,6 +491,82 @@ export default function MarksEntryScreen() {
         </View>
       </View>
       <TeacherFloatingNav navigation={navigation} activeTab="TeacherClasses" />
+
+      <Modal visible={!!historyStudent} transparent animationType="slide" onRequestClose={() => setHistoryStudent(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setHistoryStudent(null)}>
+          <Pressable style={{ backgroundColor: T.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: '80%' }} onPress={(e) => e.stopPropagation()}>
+            <View style={{ width: 40, height: 4, backgroundColor: T.inputBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 20, marginBottom: 16 }}>
+              {historyStudent?.name ?? 'Student'}
+            </Text>
+
+            {historyLoading ? (
+              <ActivityIndicator color={T.primary} style={{ marginVertical: 32 }} />
+            ) : groupedHistory.length === 0 ? (
+              <Text style={{ color: T.textMuted, fontSize: 14, textAlign: 'center', marginVertical: 32 }}>
+                No previous marks recorded
+              </Text>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+                {groupedHistory.map(([subj, marks]) => (
+                  <View key={subj} style={{ marginBottom: 20 }}>
+                    <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 16, marginBottom: 10 }}>{subj}</Text>
+                    {marks.map((m) => {
+                      const max = m.exam?.maxMarks ?? m.maxMarks ?? 100;
+                      const obtained = m.marksObtained ?? 0;
+                      const pct = max > 0 ? (obtained / max) * 100 : 0;
+                      const pctText = m.percentage != null ? String(m.percentage) : pct.toFixed(0);
+                      return (
+                        <View
+                          key={m.id ?? `${subj}-${m.exam?.name}-${m.exam?.date}`}
+                          style={{
+                            backgroundColor: T.bg,
+                            borderRadius: T.radius.lg,
+                            padding: 14,
+                            marginBottom: 8,
+                            borderWidth: 1,
+                            borderColor: T.inputBorder,
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 14, flex: 1 }}>
+                              {m.exam?.name ?? 'Exam'}
+                            </Text>
+                            <View style={{ backgroundColor: T.primaryLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
+                              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 11 }}>
+                                {formatExamTypeLabel(m.exam?.examType)}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                            <Text style={{ color: percentageColor(pct), fontWeight: '800', fontSize: 16 }}>
+                              {obtained}/{max} ({pctText}%)
+                            </Text>
+                            <Text style={{ color: T.textMuted, fontSize: 12 }}>{formatExamDate(m.exam?.date)}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setHistoryStudent(null)}
+              style={{
+                marginTop: 16,
+                backgroundColor: T.primary,
+                borderRadius: T.radius.full,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: T.textWhite, fontWeight: '700', fontSize: 15 }}>Close</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

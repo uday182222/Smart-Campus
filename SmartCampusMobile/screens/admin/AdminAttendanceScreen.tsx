@@ -21,7 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { ClassService } from '../../services/ClassService';
 import { AttendanceService } from '../../services/AttendanceService';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import { LightButton } from '../../components/ui';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -273,7 +273,7 @@ export default function AdminAttendanceScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', paddingHorizontal: T.px, marginTop: 16, gap: 10 }}>
           <View style={{ flex: 1, backgroundColor: T.successTint, borderRadius: T.radius.xl, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(34,197,94,0.25)' }}>
             <CheckCircle size={18} color={T.success} strokeWidth={1.8} />
@@ -380,15 +380,16 @@ export default function AdminAttendanceScreen() {
       <View
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: barBottomWithNav(insets.bottom),
           left: 0,
           right: 0,
           backgroundColor: T.card,
           paddingTop: 12,
           paddingHorizontal: T.px,
-          paddingBottom: 24,
+          paddingBottom: 12,
           borderTopWidth: 1,
           borderTopColor: T.inputBorder,
+          zIndex: 50,
           ...T.shadowLg,
         }}
       >

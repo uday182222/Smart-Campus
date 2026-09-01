@@ -41,7 +41,7 @@ export default function AccentColorPickerScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingTop: 60, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingTop: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={{ fontSize: 14, color: T.textMuted }}>Welcome,</Text>

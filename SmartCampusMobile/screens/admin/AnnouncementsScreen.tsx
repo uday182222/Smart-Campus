@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Megaphone, ChevronLeft, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LightButton, LightInput } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -135,7 +135,7 @@ export default function AnnouncementsScreen() {
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160 }}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNav(insets.bottom) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadList(); }} tintColor={T.primary} />}
       >
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
@@ -234,7 +234,7 @@ export default function AnnouncementsScreen() {
         onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

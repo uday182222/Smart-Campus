@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useNavigationState } from '@react-navigation/native';
@@ -14,7 +14,7 @@ import { FloatingNav } from '../../components/ui/FloatingNav';
 import { useActiveChild } from '../../contexts/ActiveChildContext';
 import { apiClient } from '../../services/apiClient';
 import { PD, cardShadow, darkenHex } from '../../constants/parentDesign';
-import { T } from '../../constants/theme';
+import { T, scrollPadWithNav } from '../../constants/theme';
 
 const API = apiClient as any;
 
@@ -48,6 +48,7 @@ export default function FeeStatusScreen() {
     }
   };
   const { theme } = useSchoolTheme();
+  const insets = useSafeAreaInsets();
   const primary = theme.primaryColor || '#2B5CE6';
   const primaryDark = darkenHex(primary, 0.2);
   const { activeChild, children } = useActiveChild();
@@ -96,7 +97,7 @@ export default function FeeStatusScreen() {
   if (loading && !data) {
     return (
       <View style={{ flex: 1, backgroundColor: PD.bg }}>
-        <LinearGradient colors={[primary, primaryDark]} style={{ padding: 24, paddingTop: 56 }}>
+        <LinearGradient colors={[primary, primaryDark]} style={{ padding: 24, paddingTop: insets.top + 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             {showBack ? (
               <TouchableOpacity
@@ -176,7 +177,7 @@ export default function FeeStatusScreen() {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110, paddingTop: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: scrollPadWithNav(insets.bottom), paddingTop: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}>
         <View style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 18, marginBottom: 16 }, cardShadow]}>
           <Text style={{ color: PD.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 }}>SUMMARY</Text>
           <View style={{ flexDirection: 'row', marginTop: 12, flexWrap: 'wrap', gap: 12 }}>

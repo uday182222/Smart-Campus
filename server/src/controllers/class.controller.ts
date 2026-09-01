@@ -1,7 +1,7 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
-import { AppError } from '../utils/errors';
+import { AppError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
@@ -17,8 +17,13 @@ export const classController = {
       orderBy: [{ name: 'asc' }, { section: 'asc' }],
       include: {
         _count: { select: { teachers: true, attendance: true } },
-        school: { select: { name: true } }
-      }
+        school: { select: { name: true } },
+        teachers: {
+          include: {
+            teacher: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
     });
     return res.json({ success: true, data: { classes } });
   },
@@ -33,12 +38,16 @@ export const classController = {
       include: {
         class: {
           include: {
-            school: { select: { name: true } }
-          }
-        }
-      }
+            school: { select: { name: true } },
+          },
+        },
+      },
     });
-    const classes = teacherClasses.map(tc => tc.class);
+    const classes = teacherClasses.map((tc) => ({
+      ...tc.class,
+      isClassTeacher: tc.isClassTeacher,
+      assignedSubject: tc.subject,
+    }));
     return res.json({ success: true, data: { classes } });
   },
 
@@ -51,9 +60,9 @@ export const classController = {
         school: true,
         teachers: {
           include: {
-            teacher: { select: { id: true, name: true, email: true } }
-          }
-        }
+            teacher: { select: { id: true, name: true, email: true } },
+          },
+        },
       }
     });
     if (!cls) throw new AppError('Class not found', 404);
@@ -133,5 +142,50 @@ export const classController = {
     await prisma.class.delete({ where: { id } });
     logger.info(`Class deleted: ${id}`);
     return res.json({ success: true, message: 'Class deleted' });
-  }
+  },
+
+  /** PATCH /classes/:classId/class-teacher — designate class teacher (ADMIN/PRINCIPAL) */
+  async setClassTeacher(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { classId } = req.params;
+      const schoolId = req.user?.schoolId;
+      const { teacherId } = req.body as { teacherId?: string };
+
+      if (!schoolId) throw new ForbiddenError('School access required');
+      if (!teacherId?.trim()) throw new BadRequestError('teacherId is required');
+
+      const cls = await prisma.class.findFirst({
+        where: { id: classId, schoolId },
+      });
+      if (!cls) throw new ForbiddenError('Class not found in your school');
+
+      const assignment = await prisma.teacherClass.findFirst({
+        where: { classId, teacherId: teacherId.trim() },
+      });
+      if (!assignment) {
+        throw new BadRequestError('Teacher is not assigned to this class');
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        await tx.teacherClass.updateMany({
+          where: { classId },
+          data: { isClassTeacher: false },
+        });
+        return tx.teacherClass.update({
+          where: { id: assignment.id },
+          data: { isClassTeacher: true },
+          include: {
+            teacher: { select: { id: true, name: true, email: true } },
+            class: { select: { id: true, name: true, section: true } },
+          },
+        });
+      });
+
+      logger.info(`Class teacher set: class=${classId} teacher=${teacherId} by user=${req.user?.id}`);
+      return res.json({ success: true, data: { assignment: updated } });
+    } catch (error) {
+      logger.error('setClassTeacher error:', error);
+      return next(error);
+    }
+  },
 };

@@ -11,6 +11,13 @@ router.get('/today', authMiddleware.requireTeacher, classController.today);
 // GET /classes — list classes (by schoolId from JWT)
 router.get('/', classController.list);
 
+// PATCH /classes/:classId/class-teacher — set class teacher (before /:id)
+router.patch(
+  '/:classId/class-teacher',
+  authMiddleware.requireRole('ADMIN', 'PRINCIPAL'),
+  classController.setClassTeacher,
+);
+
 // GET /classes/:id — get one class with teachers and students
 router.get('/:id', classController.getOne);
 

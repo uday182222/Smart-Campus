@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BookOpen, Plus, Calendar as CalendarIcon, Users as UsersIcon, FileText as FileTextIcon, ChevronLeft } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton, Pressable3D } from '../../components/ui';
 import { apiClient } from '../../services/apiClient';
 import { ClassService } from '../../services/ClassService';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
 
 const API = apiClient as any;
@@ -160,6 +160,15 @@ export default function HomeworkScreen() {
     }
   }, [selectedClassId, tab]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedClassId) {
+        if (tab === 'assigned') loadHomework();
+        else loadSubmissions();
+      }
+    }, [selectedClassId, tab, loadHomework, loadSubmissions]),
+  );
+
   const onRefresh = () => {
     setRefreshing(true);
     if (tab === 'assigned') loadHomework().then(() => setRefreshing(false));
@@ -169,9 +178,9 @@ export default function HomeworkScreen() {
   const getStatusStyle = (due: string) => {
     const d = new Date(due);
     const now = new Date();
-    if (d < now) return { bg: '#FEE2E2', border: '#EF4444', text: '#DC2626', label: 'Overdue' };
-    if ((d.getTime() - now.getTime()) / 86400000 < 2) return { bg: '#FEF3C7', border: '#F59E0B', text: '#D97706', label: 'Due Soon' };
-    return { bg: '#DCFCE7', border: '#22C55E', text: '#15803D', label: 'Active' };
+    if (d < now) return { bg: T.dangerTint, border: T.danger, text: T.danger, label: 'Overdue' };
+    if ((d.getTime() - now.getTime()) / 86400000 < 2) return { bg: T.warningTint, border: T.warning, text: T.warning, label: 'Due Soon' };
+    return { bg: T.successTint, border: T.success, text: T.success, label: 'Active' };
   };
 
   return (
@@ -256,16 +265,17 @@ export default function HomeworkScreen() {
         })}
       </ScrollView>
 
-      <View style={{ flex: 1, paddingHorizontal: 20, marginTop: 8, paddingBottom: 120 }}>
+      <View style={{ flex: 1, paddingHorizontal: T.px, marginTop: 8 }}>
         {loading ? (
-          <View style={{ gap: 8 }}>
+          <View style={{ flex: 1, gap: 8 }}>
             {[1, 2, 3].map((i) => (
-              <View key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: 20, height: 140, marginBottom: 12 }} />
+              <View key={i} style={{ backgroundColor: T.card, borderRadius: 20, flex: 1, minHeight: 120, marginBottom: 12 }} />
             ))}
           </View>
         ) : tab === 'assigned' ? (
           <FlatList
             style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: scrollPadWithNav(insets.bottom) }}
             data={homework}
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
@@ -318,6 +328,7 @@ export default function HomeworkScreen() {
         ) : (
           <FlatList
             style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: scrollPadWithNav(insets.bottom) }}
             data={submissions}
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
@@ -367,8 +378,10 @@ export default function HomeworkScreen() {
         onPress={() => navigation.navigate('HomeworkCreate')}
         style={{
           position: 'absolute',
-          bottom: 110,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
+          zIndex: 999,
+          elevation: 10,
           width: 56,
           height: 56,
           borderRadius: 28,

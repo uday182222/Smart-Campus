@@ -20,7 +20,7 @@ import { Search, UserPlus, Pencil, User, ChevronLeft } from 'lucide-react-native
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { LightButton, LightInput } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -270,7 +270,7 @@ export default function UserManagementScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160, paddingTop: 4 }}
+          contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNav(insets.bottom), paddingTop: 4 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
           renderItem={({ item }) => (
             <Pressable
@@ -323,7 +323,7 @@ export default function UserManagementScreen() {
         onPress={openAdd}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

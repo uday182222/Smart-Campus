@@ -32,7 +32,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { LightButton, Pressable3D } from '../../components/ui';
 import { apiClient } from '../../services/apiClient';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -282,7 +282,7 @@ export default function EventsScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160 }}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNav(insets.bottom) }}
         showsVerticalScrollIndicator={false}
       >
         {/* Calendar grid */}
@@ -738,7 +738,7 @@ export default function EventsScreen() {
         onPress={openAdd}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

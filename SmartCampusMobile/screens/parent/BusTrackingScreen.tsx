@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { useActiveChild } from '../../contexts/ActiveChildContext';
 import { FloatingNav } from '../../components/ui/FloatingNav';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import transportService from '../../services/TransportService';
+import { scrollPadWithNav } from '../../constants/theme';
 import { PD, cardShadow, darkenHex } from '../../constants/parentDesign';
 
 interface Stop {
@@ -35,6 +36,7 @@ interface BusStatus {
 
 export default function BusTrackingScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { activeChild, children } = useActiveChild();
   const { theme } = useSchoolTheme();
   const primary = theme.primaryColor || '#2B5CE6';
@@ -119,7 +121,7 @@ export default function BusTrackingScreen() {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48, paddingTop: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: scrollPadWithNav(insets.bottom), paddingTop: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
       >
         {loading && !busStatus ? (

@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { apiClient } from '../../services/apiClient';
 import { ClassService } from '../../services/ClassService';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import { LightButton } from '../../components/ui';
 import { getDefaultTimetableDay } from '../../components/ui/TimetableDayView';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
@@ -248,7 +248,7 @@ export default function TimetableEditScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} showsVerticalScrollIndicator={false}>
         <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 14, marginBottom: 10 }}>Class</Text>
         {loadingClasses ? (
           <ActivityIndicator color={primary} />
@@ -422,15 +422,32 @@ export default function TimetableEditScreen() {
           </View>
         )}
 
+      </ScrollView>
+
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: barBottomWithNav(insets.bottom),
+          backgroundColor: T.card,
+          paddingHorizontal: T.px,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: T.inputBorder,
+          zIndex: 50,
+          ...T.shadowLg,
+        }}
+      >
         <LightButton
           label="Save Timetable"
           onPress={saveTimetable}
           variant="primary"
           loading={saving}
           disabled={!selectedClass || saving}
-          style={{ marginTop: 8, backgroundColor: primary } as any}
+          style={{ backgroundColor: primary } as any}
         />
-      </ScrollView>
+      </View>
 
       <TeacherFloatingNav navigation={navigation} activeTab="TeacherMore" />
     </View>

@@ -33,7 +33,7 @@ import { useDrawer } from '../contexts/DrawerContext';
 import { useActiveChild } from '../contexts/ActiveChildContext';
 import ParentService from '../services/ParentService';
 import { apiClient } from '../services/apiClient';
-import { T } from '../constants/theme';
+import { T, scrollPadWithNav } from '../constants/theme';
 import { DashboardSkeleton } from '../components/ui';
 import { FloatingNav } from '../components/ui/FloatingNav';
 
@@ -206,7 +206,7 @@ export default function ProductionParentDashboard() {
       <View style={{ flex: 1, backgroundColor: T.bg }}>
         <LinearGradient
           colors={[T.primary, `${T.primary}DD`]}
-          style={{ paddingTop: 60, paddingBottom: 20, paddingHorizontal: T.px }}
+          style={{ paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: T.px }}
         >
           <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 22 }}>Dashboard</Text>
         </LinearGradient>
@@ -221,7 +221,7 @@ export default function ProductionParentDashboard() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: scrollPadWithNav(insets.bottom) }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />
         }

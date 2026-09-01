@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Plus, Bus, User as UserIcon, MapPin, Trash2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
@@ -212,7 +212,7 @@ export default function TransportManagementScreen() {
       {/* Route list */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 160 }}
+        contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNav(insets.bottom) }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
       >
@@ -364,7 +364,7 @@ export default function TransportManagementScreen() {
         onPress={openCreate}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

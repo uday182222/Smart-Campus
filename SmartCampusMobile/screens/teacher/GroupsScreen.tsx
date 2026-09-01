@@ -20,7 +20,7 @@ import { ChevronLeft, Plus, Users, Trash2, UserPlus } from 'lucide-react-native'
 import { useNavigation } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton, LightInput } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
 import { ClassService } from '../../services/ClassService';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
@@ -335,7 +335,7 @@ export default function GroupsScreen() {
         <FlatList
           data={groups}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNav(insets.bottom) }}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 48 }}>
               <Users size={40} color={T.textMuted} strokeWidth={1.5} />
@@ -381,14 +381,16 @@ export default function GroupsScreen() {
         }}
         style={{
           position: 'absolute',
-          right: T.px,
-          bottom: 100,
+          right: 24,
+          bottom: fabBottomWithNav(insets.bottom),
           width: 56,
           height: 56,
           borderRadius: 28,
           backgroundColor: primary,
           alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 999,
+          elevation: 10,
           ...T.shadowMd,
         }}
       >

@@ -3,11 +3,11 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Modal, Alert, Share } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Modal, Alert, Share, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Check, Share2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
 import { SuperAdminFloatingNav } from '../../components/ui/SuperAdminFloatingNav';
 
@@ -68,6 +68,7 @@ export default function CreateSchoolScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12, backgroundColor: T.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity
@@ -82,7 +83,7 @@ export default function CreateSchoolScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }} style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <Text style={{ fontSize: 20, fontWeight: '900', color: T.textDark, marginTop: 16 }}>School Details</Text>
         <Text style={{ fontSize: 14, color: T.textMuted, marginTop: 6, marginBottom: 16 }}>Fill in the information below</Text>
 
@@ -165,6 +166,23 @@ export default function CreateSchoolScreen() {
           </View>
         </View>
 
+      </ScrollView>
+
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: barBottomWithNav(insets.bottom),
+          backgroundColor: T.card,
+          paddingHorizontal: T.px,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: T.inputBorder,
+          zIndex: 50,
+          ...T.shadowLg,
+        }}
+      >
         <TouchableOpacity
           activeOpacity={0.85}
           disabled={loading}
@@ -178,13 +196,14 @@ export default function CreateSchoolScreen() {
             flexDirection: 'row',
             gap: 10,
             opacity: loading ? 0.7 : 1,
-            ...T.shadowSm,
           }}
         >
           <Check size={20} color={T.textWhite} strokeWidth={1.8} />
           <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 16 }}>{loading ? 'Creating…' : 'Create School'}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
+
+      </KeyboardAvoidingView>
 
       <Modal visible={!!successModal} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 }}>

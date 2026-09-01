@@ -54,6 +54,8 @@ export const T = {
 
   // Spacing
   px: 20,
+  navBarHeight: 62,
+  navBarGap: 16,
   radius: { sm: 8, md: 12, lg: 14, xl: 20, xxl: 24, full: 999 },
 
   // Typography — locked system
@@ -73,3 +75,10 @@ export const T = {
     buttonLabel: { fontSize: 15, fontWeight: '700' as const, letterSpacing: 0.3 },
   },
 };
+
+export const navClearance = (insetsBottom: number) => insetsBottom + T.navBarGap + T.navBarHeight;
+export const scrollPadWithNav = (insetsBottom: number) => insetsBottom + 102;
+export const fabBottomWithNav = (insetsBottom: number) => insetsBottom + 90;
+export const barBottomWithNav = (insetsBottom: number) => insetsBottom + 86;
+export const scrollPadWithNavAndBar = (insetsBottom: number, barHeight = 76) =>
+  insetsBottom + 86 + barHeight + 16;

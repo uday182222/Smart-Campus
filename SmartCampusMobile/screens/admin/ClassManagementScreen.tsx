@@ -13,13 +13,15 @@ import {
   Pressable,
   Dimensions,
   TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Pencil, Trash2, Grid3X3, ChevronLeft } from 'lucide-react-native';
+import { Plus, Pencil, Trash2, Grid3X3, ChevronLeft, Check } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { LightButton, LightInput } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -28,6 +30,14 @@ const PAD = 20;
 const GAP = 12;
 const CARD_WIDTH = (width - PAD * 2 - GAP) / 2;
 
+interface TeacherAssignment {
+  id: string;
+  teacherId: string;
+  subject: string;
+  isClassTeacher: boolean;
+  teacher?: { id: string; name: string; email?: string };
+}
+
 interface ClassRow {
   id: string;
   name: string;
@@ -35,6 +45,12 @@ interface ClassRow {
   schoolId: string;
   roomNumber?: string;
   studentCount?: number;
+  teachers?: TeacherAssignment[];
+}
+
+function classTeacherName(c: ClassRow): string | null {
+  const ct = c.teachers?.find((t) => t.isClassTeacher);
+  return ct?.teacher?.name ?? null;
 }
 
 export default function ClassManagementScreen() {
@@ -81,6 +97,11 @@ export default function ClassManagementScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', section: 'A', academicYear: '', roomNumber: '' });
   const [saving, setSaving] = useState(false);
+  const [teacherSheetOpen, setTeacherSheetOpen] = useState(false);
+  const [teacherSheetClass, setTeacherSheetClass] = useState<ClassRow | null>(null);
+  const [teacherOptions, setTeacherOptions] = useState<TeacherAssignment[]>([]);
+  const [teacherSheetLoading, setTeacherSheetLoading] = useState(false);
+  const [assigningTeacherId, setAssigningTeacherId] = useState<string | null>(null);
 
   const schoolId = (userData as any)?.schoolId ?? '';
 
@@ -104,6 +125,40 @@ export default function ClassManagementScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     loadClasses();
+  };
+
+  const openClassTeacherSheet = async (c: ClassRow) => {
+    setTeacherSheetClass(c);
+    setTeacherSheetOpen(true);
+    setTeacherSheetLoading(true);
+    setTeacherOptions([]);
+    try {
+      const res = await apiClient.get(`/classes/${c.id}`);
+      const data = (res as any)?.data ?? res;
+      const payload = data?.data ?? data;
+      const teachers = payload?.class?.teachers ?? payload?.teachers ?? c.teachers ?? [];
+      setTeacherOptions(Array.isArray(teachers) ? teachers : []);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Failed to load teachers.');
+      setTeacherSheetOpen(false);
+    } finally {
+      setTeacherSheetLoading(false);
+    }
+  };
+
+  const assignClassTeacher = async (teacherId: string) => {
+    if (!teacherSheetClass) return;
+    setAssigningTeacherId(teacherId);
+    try {
+      await apiClient.patch(`/classes/${teacherSheetClass.id}/class-teacher`, { teacherId });
+      setTeacherSheetOpen(false);
+      setTeacherSheetClass(null);
+      await loadClasses();
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? err?.message ?? 'Failed to assign class teacher.');
+    } finally {
+      setAssigningTeacherId(null);
+    }
   };
 
   const openAdd = () => {
@@ -160,6 +215,7 @@ export default function ClassManagementScreen() {
   };
 
   const yearLabel = new Date().getFullYear();
+  const currentClassTeacherId = teacherOptions.find((t) => t.isClassTeacher)?.teacherId;
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -206,39 +262,56 @@ export default function ClassManagementScreen() {
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={{ paddingHorizontal: T.px, justifyContent: 'space-between', marginBottom: GAP }}
-          contentContainerStyle={{ paddingBottom: 160, paddingTop: 4 }}
+          contentContainerStyle={{ paddingBottom: scrollPadWithNav(insets.bottom), paddingTop: 4 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
-          renderItem={({ item }) => (
-            <View style={{ width: CARD_WIDTH, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginBottom: 4, ...T.shadowSm }}>
-              <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', zIndex: 1 }}>
-                <Pressable onPress={() => openEdit(item)} style={{ marginRight: 8 }}>
-                  <Pencil size={18} color={T.primary} strokeWidth={1.8} />
-                </Pressable>
-                <Pressable onPress={() => deleteClass(item)}>
-                  <Trash2 size={18} color={T.danger} strokeWidth={1.8} />
-                </Pressable>
+          renderItem={({ item }) => {
+            const ctName = classTeacherName(item);
+            return (
+              <View style={{ width: CARD_WIDTH, backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginBottom: 4, ...T.shadowSm }}>
+                <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', zIndex: 1 }}>
+                  <Pressable onPress={() => openEdit(item)} style={{ marginRight: 8 }}>
+                    <Pencil size={18} color={T.primary} strokeWidth={1.8} />
+                  </Pressable>
+                  <Pressable onPress={() => deleteClass(item)}>
+                    <Trash2 size={18} color={T.danger} strokeWidth={1.8} />
+                  </Pressable>
+                </View>
+                <Text style={{ color: T.primary, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 }}>{item.name}</Text>
+                <View
+                  style={{
+                    alignSelf: 'flex-start',
+                    backgroundColor: T.primaryLight,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    marginTop: 8,
+                  }}
+                >
+                  <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>Sec {item.section}</Text>
+                </View>
+                {item.roomNumber ? (
+                  <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 8 }}>Room {item.roomNumber}</Text>
+                ) : null}
+                <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 4 }}>
+                  {(item as any).studentCount ?? 0} students
+                </Text>
+                <TouchableOpacity onPress={() => openClassTeacherSheet(item)} activeOpacity={0.85} style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: T.textMuted }}>Class teacher</Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '700',
+                      marginTop: 2,
+                      color: ctName ? T.textDark : T.warning,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {ctName ?? 'No class teacher'}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text style={{ color: T.primary, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 }}>{item.name}</Text>
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  backgroundColor: T.primaryLight,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  marginTop: 8,
-                }}
-              >
-                <Text style={{ color: T.primary, fontSize: 11, fontWeight: '800' }}>Sec {item.section}</Text>
-              </View>
-              {item.roomNumber ? (
-                <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 8 }}>Room {item.roomNumber}</Text>
-              ) : null}
-              <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 4 }}>
-                {(item as any).studentCount ?? 0} students
-              </Text>
-            </View>
-          )}
+            );
+          }}
         />
       )}
 
@@ -246,7 +319,7 @@ export default function ClassManagementScreen() {
         onPress={openAdd}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,
@@ -269,7 +342,6 @@ export default function ClassManagementScreen() {
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setModalVisible(false)}>
           <Pressable
             style={{ backgroundColor: T.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24 }}
-            // intentional — blocks tap-through
             onPress={() => {}}
           >
             <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 22, marginBottom: 16 }}>{editingId ? 'Edit Class' : 'New Class'}</Text>
@@ -285,6 +357,68 @@ export default function ClassManagementScreen() {
             />
             <LightButton label={editingId ? 'Save class' : 'Create class'} variant="primary" onPress={saveClass} loading={saving} />
             <LightButton label="Cancel" variant="outline" onPress={() => setModalVisible(false)} style={{ marginTop: 8 }} />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={teacherSheetOpen} transparent animationType="slide" onRequestClose={() => setTeacherSheetOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }} onPress={() => setTeacherSheetOpen(false)}>
+          <Pressable style={{ backgroundColor: T.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, maxHeight: '70%' }} onPress={(e) => e.stopPropagation()}>
+            <View style={{ width: 40, height: 4, backgroundColor: T.inputBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 20, marginBottom: 4 }}>Class teacher</Text>
+            <Text style={{ color: T.textMuted, fontSize: 13, marginBottom: 16 }}>
+              {teacherSheetClass ? `${teacherSheetClass.name} ${teacherSheetClass.section}` : ''}
+            </Text>
+
+            {teacherSheetLoading ? (
+              <ActivityIndicator color={T.primary} style={{ marginVertical: 24 }} />
+            ) : teacherOptions.length === 0 ? (
+              <Text style={{ color: T.textMuted, textAlign: 'center', marginVertical: 24 }}>No teachers assigned to this class.</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {teacherOptions.map((t) => {
+                  const isCurrent = t.teacherId === currentClassTeacherId || t.isClassTeacher;
+                  const busy = assigningTeacherId === t.teacherId;
+                  return (
+                    <TouchableOpacity
+                      key={t.id}
+                      onPress={() => assignClassTeacher(t.teacherId)}
+                      disabled={!!assigningTeacherId}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 14,
+                        borderBottomWidth: 1,
+                        borderBottomColor: T.inputBorder,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>{t.teacher?.name ?? 'Teacher'}</Text>
+                        <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2 }}>{t.subject}</Text>
+                      </View>
+                      {busy ? (
+                        <ActivityIndicator color={T.primary} size="small" />
+                      ) : isCurrent ? (
+                        <Check size={20} color={T.primary} strokeWidth={2} />
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setTeacherSheetOpen(false)}
+              style={{
+                marginTop: 16,
+                backgroundColor: T.primaryLight,
+                borderRadius: T.radius.full,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 15 }}>Close</Text>
+            </TouchableOpacity>
           </Pressable>
         </Pressable>
       </Modal>

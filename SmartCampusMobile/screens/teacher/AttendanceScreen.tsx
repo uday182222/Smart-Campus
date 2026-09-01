@@ -23,7 +23,7 @@ import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton } from '../../components/ui';
 import { ClassService } from '../../services/ClassService';
 import { AttendanceService } from '../../services/AttendanceService';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import { TeacherFloatingNav } from '../../components/ui/TeacherFloatingNav';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'not_marked';
@@ -281,7 +281,7 @@ export default function AttendanceScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: scrollPadWithNavAndBar(insets.bottom) }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ flexDirection: 'row', paddingHorizontal: T.px, marginTop: 16, gap: 10 }}>
@@ -403,15 +403,16 @@ export default function AttendanceScreen() {
       <View
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: barBottomWithNav(insets.bottom),
           left: 0,
           right: 0,
           backgroundColor: T.card,
           paddingTop: 12,
           paddingHorizontal: T.px,
-          paddingBottom: 24,
+          paddingBottom: 12,
           borderTopWidth: 1,
           borderTopColor: T.inputBorder,
+          zIndex: 50,
           ...T.shadowLg,
         }}
       >

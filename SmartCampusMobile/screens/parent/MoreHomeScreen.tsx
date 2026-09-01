@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,7 +13,7 @@ import { FloatingNav } from '../../components/ui/FloatingNav';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { PD, cardShadow, darkenHex } from '../../constants/parentDesign';
-import { T } from '../../constants/theme';
+import { T, scrollPadWithNav } from '../../constants/theme';
 
 type GridItem =
   | { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string; color: string; action: 'nav'; target: string }
@@ -30,6 +30,7 @@ const GRID: GridItem[] = [
 
 export default function MoreHomeScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { userData, logout } = useAuth();
   const { theme } = useSchoolTheme();
   const primary = theme.primaryColor || '#2B5CE6';
@@ -64,7 +65,7 @@ export default function MoreHomeScreen() {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: scrollPadWithNav(insets.bottom) }} showsVerticalScrollIndicator={false}>
         <View style={[{ backgroundColor: PD.card, borderRadius: 20, padding: 20 }, cardShadow]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: primary, alignItems: 'center', justifyContent: 'center' }}>

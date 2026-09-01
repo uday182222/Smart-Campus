@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { LightButton } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
 import { apiClient } from '../../services/apiClient';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -247,7 +247,7 @@ export default function SchoolProfileScreen() {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: 140 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }}>
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 4, ...T.shadowSm }}>
           <Text style={{ color: T.textDark, fontSize: 18, fontWeight: '900', marginBottom: 16 }}>School Information</Text>
 
@@ -333,8 +333,25 @@ export default function SchoolProfileScreen() {
           </View>
         </View>
 
-        <LightButton label="Save Changes" variant="primary" icon="checkmark-circle-outline" iconPosition="left" onPress={save} loading={saving} style={{ marginTop: 20, marginBottom: 40 }} />
       </ScrollView>
+
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: barBottomWithNav(insets.bottom),
+          backgroundColor: T.card,
+          paddingHorizontal: T.px,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: T.inputBorder,
+          zIndex: 50,
+          ...T.shadowLg,
+        }}
+      >
+        <LightButton label="Save Changes" variant="primary" icon="checkmark-circle-outline" iconPosition="left" onPress={save} loading={saving} />
+      </View>
 
       <Modal visible={changeCodeModalVisible} transparent animationType="slide">
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }} onPress={() => setChangeCodeModalVisible(false)}>

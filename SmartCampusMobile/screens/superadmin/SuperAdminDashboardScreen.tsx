@@ -9,7 +9,7 @@ import { Bell, Plus, ChevronRight, Building2, Users, GraduationCap, CheckCircle 
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardSkeleton } from '../../components/ui';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import apiClient from '../../services/apiClient';
 import { SuperAdminFloatingNav } from '../../components/ui/SuperAdminFloatingNav';
 
@@ -87,7 +87,7 @@ export default function SuperAdminDashboardScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: scrollPadWithNav(insets.bottom) }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.primary} />}
       >
@@ -311,7 +311,7 @@ export default function SuperAdminDashboardScreen() {
         activeOpacity={0.85}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

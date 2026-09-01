@@ -91,7 +91,7 @@ export default function TeacherMoreScreen() {
                   return;
                 }
                 if (item.screen === 'Calendar') {
-                  safeNavigate(() => navigation.getParent()?.navigate('TeacherClasses' as any, { screen: 'Calendar' } as any));
+                  safeNavigate(() => navigation.navigate('Calendar'));
                   return;
                 }
                 if (item.screen === 'Profile') {

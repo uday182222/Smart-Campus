@@ -4,7 +4,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { FloatingNav } from '../../components/ui/FloatingNav';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { useActiveChild } from '../../contexts/ActiveChildContext';
 import ParentService from '../../services/ParentService';
+import { scrollPadWithNav } from '../../constants/theme';
 import { PD, cardShadow, darkenHex, statNumber } from '../../constants/parentDesign';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -37,6 +38,7 @@ const COLOR_MAP: Record<string, string> = {
 
 export default function AcademicHomeScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { theme } = useSchoolTheme();
   const primary = theme.primaryColor || '#2B5CE6';
   const primaryDark = darkenHex(primary, 0.2);
@@ -109,7 +111,7 @@ export default function AcademicHomeScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110, paddingTop: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: scrollPadWithNav(insets.bottom), paddingTop: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
         showsVerticalScrollIndicator={false}
       >

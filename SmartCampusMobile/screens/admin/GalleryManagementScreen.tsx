@@ -23,7 +23,7 @@ import { ChevronLeft, Folder, Plus, Search, Globe, Users, Lock, Grid3X3, List, I
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { T } from '../../constants/theme';
+import { T, fabBottomWithNav, scrollPadWithNav } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminFloatingNav } from '../../components/ui/AdminFloatingNav';
 
@@ -441,7 +441,7 @@ const GalleryManagementScreen: React.FC = () => {
             tintColor={T.primary}
           />
         }
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingBottom: scrollPadWithNav(insets.bottom) }}
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -503,7 +503,7 @@ const GalleryManagementScreen: React.FC = () => {
         onPress={handleUploadPress}
         style={{
           position: 'absolute',
-          bottom: 100,
+          bottom: fabBottomWithNav(insets.bottom),
           right: 24,
           width: 56,
           height: 56,

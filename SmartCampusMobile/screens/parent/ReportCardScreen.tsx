@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, useNavigationState } from '@react-navigation/native';
 import { ArrowLeft, BookOpen } from 'lucide-react-native';
@@ -52,6 +52,7 @@ export default function ReportCardScreen() {
     }
   };
   const { theme } = useSchoolTheme();
+  const insets = useSafeAreaInsets();
   const primary = theme.primaryColor || T.primary;
   const primaryDark = darkenHex(primary, 0.2);
   const { activeChild, children } = useActiveChild();
@@ -94,7 +95,7 @@ export default function ReportCardScreen() {
   if (loading && !data) {
     return (
       <View style={{ flex: 1, backgroundColor: T.bg }}>
-        <LinearGradient colors={[primary, primaryDark]} style={{ paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20 }}>
+        <LinearGradient colors={[primary, primaryDark]} style={{ paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}>
           <Text style={{ color: T.textWhite, fontSize: 24, fontWeight: '900' }}>Report Card</Text>
         </LinearGradient>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

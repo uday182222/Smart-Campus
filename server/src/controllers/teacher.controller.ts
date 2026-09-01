@@ -216,6 +216,9 @@ export const teacherController = {
         // keep old shape compatibility (some screens read "subject")
         subject: c.subjects[0] ?? 'General',
         subjects: c.subjects,
+        isClassTeacher: teacherClasses.some(
+          (tc) => tc.classId === c.id && tc.isClassTeacher,
+        ),
       }));
 
       return res.json({ success: true, data: list });

@@ -33,7 +33,17 @@ interface RemarkRow {
   remarkType: string;
   createdAt: string;
   student?: { name: string };
+  class?: { name?: string; section?: string };
   className?: string;
+}
+
+function remarkClassLabel(item: RemarkRow): string | null {
+  if (item.className?.trim()) return item.className.trim();
+  if (item.class?.name) {
+    const section = item.class.section?.trim();
+    return section ? `${item.class.name} ${section}` : item.class.name;
+  }
+  return null;
 }
 
 function getInitials(name: string) {
@@ -75,11 +85,11 @@ export default function RemarksScreen() {
       const res = await ClassService.getTeacherClassStudents(selectedClassId);
       const list = (res.data ?? []).map((s: any) => ({ id: s.id, name: s.name ?? 'Student' }));
       setStudents(list);
-      if (list.length > 0 && !selectedStudentId) setSelectedStudentId(list[0].id);
+      if (list.length > 0) setSelectedStudentId(list[0].id);
     } catch (_e) {
       setStudents([]);
     }
-  }, [selectedClassId, selectedStudentId]);
+  }, [selectedClassId]);
 
   const loadRemarks = useCallback(async () => {
     if (!selectedStudentId) {
@@ -102,6 +112,11 @@ export default function RemarksScreen() {
   useEffect(() => {
     loadClasses();
   }, []);
+
+  useEffect(() => {
+    setSelectedStudentId('');
+    setRemarks([]);
+  }, [selectedClassId]);
 
   useEffect(() => {
     if (selectedClassId) loadStudents();
@@ -166,8 +181,6 @@ export default function RemarksScreen() {
       label: 'Neutral',
     };
   };
-
-  const classLabel = classes.find((c) => c.id === selectedClassId)?.name ?? '';
 
   const stripColor = (rt: string) => {
     const x = (rt || '').toLowerCase();
@@ -319,6 +332,7 @@ export default function RemarksScreen() {
           renderItem={({ item }) => {
             const sc = stripColor(item.remarkType);
             const bd = badgeFor(item.remarkType);
+            const itemClassLabel = remarkClassLabel(item);
             return (
               <View style={[{ backgroundColor: TD.card, borderRadius: 16, marginBottom: 12, flexDirection: 'row', overflow: 'hidden' }, cardShadow]}>
                 <View style={{ width: 4, backgroundColor: sc, borderRadius: 2 }} />
@@ -329,7 +343,9 @@ export default function RemarksScreen() {
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={{ color: TD.textDark, fontWeight: '800' }}>{item.student?.name ?? 'Student'}</Text>
-                      <Text style={{ color: TD.textMuted, fontSize: 11, marginTop: 2 }}>{classLabel}</Text>
+                      {itemClassLabel ? (
+                        <Text style={{ color: TD.textMuted, fontSize: 11, marginTop: 2 }}>{itemClassLabel}</Text>
+                      ) : null}
                     </View>
                     <View style={{ backgroundColor: bd.bg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
                       <Ionicons name={bd.icon} size={12} color={bd.c} />
