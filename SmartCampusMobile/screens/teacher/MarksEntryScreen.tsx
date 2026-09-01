@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, Lock } from 'lucide-react-native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton } from '../../components/ui';
 import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
@@ -88,6 +88,7 @@ export default function MarksEntryScreen() {
   const canGoBack = navigation.canGoBack?.() ?? false;
   const insets = useSafeAreaInsets();
   const [classes, setClasses] = useState<Array<{ id: string; name: string; section?: string }>>([]);
+  const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [students, setStudents] = useState<Array<{ id: string; name: string }>>([]);
   const [subject, setSubject] = useState('');
@@ -127,16 +128,26 @@ export default function MarksEntryScreen() {
 
   const loadClasses = useCallback(async () => {
     setClassesError(null);
+    setClassesLoading(true);
     try {
       const res = await ClassService.getTeacherClasses();
-      const list = (res.data ?? []).map((c: any) => ({ id: c.id, name: `${c.name || ''} ${c.section || ''}`.trim(), section: c.section }));
+      const list = (res.data ?? [])
+        .filter((c: { isClassTeacher?: boolean }) => c.isClassTeacher === true)
+        .map((c: any) => ({ id: c.id, name: `${c.name || ''} ${c.section || ''}`.trim(), section: c.section }));
       setClasses(list);
-      if (list.length > 0 && !selectedClassId) setSelectedClassId(list[0].id);
+      if (list.length > 0) {
+        setSelectedClassId((prev) => (prev && list.some((x) => x.id === prev) ? prev : list[0].id));
+      } else {
+        setSelectedClassId('');
+      }
     } catch (err: unknown) {
       setClasses([]);
+      setSelectedClassId('');
       setClassesError(apiErrorMessage(err));
+    } finally {
+      setClassesLoading(false);
     }
-  }, [selectedClassId]);
+  }, []);
 
   const loadStudents = useCallback(async () => {
     if (!selectedClassId) return;
@@ -270,6 +281,7 @@ export default function MarksEntryScreen() {
 
   const total = parseInt(totalMarks, 10) || 100;
   const markedCount = students.filter((s) => marksMap[s.id]?.trim() !== '').length;
+  const isRestricted = !classesLoading && !classesError && classes.length === 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -304,36 +316,48 @@ export default function MarksEntryScreen() {
           </View>
         ) : null}
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginTop: 12 }}
-          contentContainerStyle={{ paddingHorizontal: T.px, gap: 8, paddingVertical: 4 }}
-        >
-          {classes.map((c) => {
-            const isActive = selectedClassId === c.id;
-            return (
-              <TouchableOpacity
-                key={c.id}
-                onPress={() => setSelectedClassId(c.id)}
-                style={{
-                  height: 36,
-                  paddingHorizontal: 16,
-                  borderRadius: 18,
-                  backgroundColor: isActive ? T.primary : T.card,
-                  borderWidth: 1.5,
-                  borderColor: isActive ? T.primary : T.inputBorder,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? T.textWhite : T.textDark }}>{c.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {!isRestricted ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginTop: 12 }}
+            contentContainerStyle={{ paddingHorizontal: T.px, gap: 8, paddingVertical: 4 }}
+          >
+            {classes.map((c) => {
+              const isActive = selectedClassId === c.id;
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  onPress={() => setSelectedClassId(c.id)}
+                  style={{
+                    height: 36,
+                    paddingHorizontal: 16,
+                    borderRadius: 18,
+                    backgroundColor: isActive ? T.primary : T.card,
+                    borderWidth: 1.5,
+                    borderColor: isActive ? T.primary : T.inputBorder,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? T.textWhite : T.textDark }}>{c.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : null}
       </View>
 
+      {isRestricted ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <Lock size={40} color={T.textPlaceholder} strokeWidth={1.8} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: T.textDark, marginTop: 16 }}>Marks entry restricted</Text>
+          <Text style={{ fontSize: 13, color: T.textMuted, textAlign: 'center', marginTop: 8, paddingHorizontal: 32 }}>
+            Only class teachers can enter marks. You are not assigned as a class teacher for any class.
+          </Text>
+        </View>
+      ) : (
+        <>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} showsVerticalScrollIndicator={false}>
         <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 8, ...T.shadowSm }}>
           <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>Exam Setup</Text>
@@ -490,6 +514,8 @@ export default function MarksEntryScreen() {
           />
         </View>
       </View>
+        </>
+      )}
       <TeacherFloatingNav navigation={navigation} activeTab="TeacherClasses" />
 
       <Modal visible={!!historyStudent} transparent animationType="slide" onRequestClose={() => setHistoryStudent(null)}>

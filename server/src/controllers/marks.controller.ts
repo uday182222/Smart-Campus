@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { logger } from '../utils/logger';
 import { AppError, NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
@@ -31,7 +31,7 @@ export const marksController = {
    * POST /api/marks
    * Enter marks for a student in an exam
    */
-  async enterMarks(req: AuthRequest, res: Response) {
+  async enterMarks(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const teacherId = req.user?.id;
       const schoolId = req.user?.schoolId;
@@ -75,6 +75,16 @@ export const marksController = {
 
       if (!exam) {
         throw new NotFoundError('Exam not found');
+      }
+
+      const role = req.user?.role;
+      if (role !== 'ADMIN' && role !== 'PRINCIPAL') {
+        const assignment = await prisma.teacherClass.findFirst({
+          where: { teacherId, classId: exam.classId, isClassTeacher: true },
+        });
+        if (!assignment) {
+          throw new ForbiddenError('Only the class teacher can enter or update marks for this class.');
+        }
       }
 
       // Validate marks don't exceed max marks
@@ -197,17 +207,7 @@ export const marksController = {
       });
     } catch (error) {
       logger.error('Error entering marks:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({
-          success: false,
-          message: error.message
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error'
-        });
-      }
+      return next(error);
     }
   },
 
@@ -215,7 +215,7 @@ export const marksController = {
    * PUT /api/marks/:id
    * Update marks with audit trail
    */
-  async updateMarks(req: AuthRequest, res: Response) {
+  async updateMarks(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const teacherId = req.user?.id;
       const schoolId = req.user?.schoolId;
@@ -260,6 +260,20 @@ export const marksController = {
       // Verify marks belong to teacher's school
       if (existingMarks.exam.class.schoolId !== schoolId) {
         throw new ForbiddenError('Access denied: Marks do not belong to your school');
+      }
+
+      const role = req.user?.role;
+      if (role !== 'ADMIN' && role !== 'PRINCIPAL') {
+        const assignment = await prisma.teacherClass.findFirst({
+          where: {
+            teacherId,
+            classId: existingMarks.exam.classId,
+            isClassTeacher: true,
+          },
+        });
+        if (!assignment) {
+          throw new ForbiddenError('Only the class teacher can enter or update marks for this class.');
+        }
       }
 
       // Verify teacher has permission (either the original teacher or admin)
@@ -382,17 +396,7 @@ export const marksController = {
       });
     } catch (error) {
       logger.error('Error updating marks:', error);
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({
-          success: false,
-          message: error.message
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error'
-        });
-      }
+      return next(error);
     }
   },
 

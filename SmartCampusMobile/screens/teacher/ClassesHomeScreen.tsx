@@ -19,6 +19,7 @@ interface ClassItem {
   section?: string;
   room?: string;
   studentCount?: number;
+  isClassTeacher?: boolean;
 }
 
 export default function ClassesHomeScreen() {
@@ -44,6 +45,7 @@ export default function ClassesHomeScreen() {
         section: c.section,
         room: c.room,
         studentCount: c.studentCount ?? c._count?.students ?? 0,
+        isClassTeacher: c.isClassTeacher === true,
       }));
       setClasses(list);
       setSelected((prev) => {
@@ -225,14 +227,20 @@ export default function ClassesHomeScreen() {
                   <Text style={{ color: primary, fontWeight: '900' }}>{m.score}</Text>
                 </View>
               ))}
-              <LightButton
-                label="Enter Marks"
-                variant="outline"
-                onPress={() => navigation.navigate('MarksEntry')}
-                style={{ marginTop: 16 }}
-                icon="create-outline"
-                iconPosition="left"
-              />
+              {selected.isClassTeacher ? (
+                <LightButton
+                  label="Enter Marks"
+                  variant="outline"
+                  onPress={() => navigation.navigate('MarksEntry')}
+                  style={{ marginTop: 16 }}
+                  icon="create-outline"
+                  iconPosition="left"
+                />
+              ) : (
+                <Text style={{ color: T.textMuted, fontSize: 13, marginTop: 16, textAlign: 'center' }}>
+                  Marks entry is available only for class teachers.
+                </Text>
+              )}
             </View>
           </>
         ) : (
