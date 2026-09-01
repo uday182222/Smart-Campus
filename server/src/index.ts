@@ -18,7 +18,7 @@ const PORT = Number(process.env.PORT) || 5000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 // Middleware
-app.use(helmet()); // Security headers
+app.use(helmet({ hsts: false })); // Security headers
 app.use(cors({
   origin: process.env.CORS_ORIGIN?.split(',') || '*',
   credentials: true
