@@ -265,7 +265,7 @@ export default function HomeworkScreen() {
         })}
       </ScrollView>
 
-      <View style={{ flex: 1, paddingHorizontal: T.px, marginTop: 8 }}>
+      <View style={{ flex: 1, marginTop: 8 }}>
         {loading ? (
           <View style={{ flex: 1, gap: 8 }}>
             {[1, 2, 3].map((i) => (
@@ -275,7 +275,7 @@ export default function HomeworkScreen() {
         ) : tab === 'assigned' ? (
           <FlatList
             style={{ flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: scrollPadWithNav(insets.bottom) }}
+            contentContainerStyle={{ paddingHorizontal: T.px, paddingTop: 8, paddingBottom: scrollPadWithNav(insets.bottom) }}
             data={homework}
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}
@@ -328,7 +328,7 @@ export default function HomeworkScreen() {
         ) : (
           <FlatList
             style={{ flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: scrollPadWithNav(insets.bottom) }}
+            contentContainerStyle={{ paddingHorizontal: T.px, paddingTop: 8, paddingBottom: scrollPadWithNav(insets.bottom) }}
             data={submissions}
             keyExtractor={(item) => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={primary} />}

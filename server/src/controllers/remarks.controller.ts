@@ -39,15 +39,24 @@ export const remarksController = {
     const schoolId = req.user?.schoolId;
     if (!schoolId) throw new AppError('School access required', 403);
 
+    const student = await prisma.user.findFirst({
+      where: { id: studentId, role: 'STUDENT', schoolId },
+      select: { id: true, name: true },
+    });
+    if (!student) throw new NotFoundError('Student not found');
+
     const remarks = await prisma.remark.findMany({
-      where: {
-        studentId,
-        teacher: { schoolId },
-      },
+      where: { studentId },
       orderBy: { createdAt: 'desc' },
       include: { teacher: { select: { id: true, name: true } } },
     });
-    return res.json({ success: true, data: { remarks } });
+
+    const enriched = remarks.map((r) => ({
+      ...r,
+      student: { id: student.id, name: student.name },
+    }));
+
+    return res.json({ success: true, data: { remarks: enriched } });
   },
 
   /** GET /remarks/class/:classId — remarks for students in class */

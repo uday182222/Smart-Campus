@@ -17,8 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton, LightInput } from '../../components/ui';
 import { TD, cardShadow, darkenHex } from '../../constants/teacherDesign';
@@ -54,7 +53,6 @@ export default function RemarksScreen() {
   const { theme } = useSchoolTheme();
   const primary = theme.primaryColor || '#2B5CE6';
   const primaryDark = darkenHex(primary, 0.2);
-  const { userData } = useAuth();
   const navigation = useNavigation<any>();
   const [classes, setClasses] = useState<Array<{ id: string; name: string }>>([]);
   const [students, setStudents] = useState<Array<{ id: string; name: string }>>([]);
@@ -85,7 +83,7 @@ export default function RemarksScreen() {
       const res = await ClassService.getTeacherClassStudents(selectedClassId);
       const list = (res.data ?? []).map((s: any) => ({ id: s.id, name: s.name ?? 'Student' }));
       setStudents(list);
-      if (list.length > 0) setSelectedStudentId(list[0].id);
+      setSelectedStudentId((prev) => (list.some((s) => s.id === prev) ? prev : list[0]?.id ?? ''));
     } catch (_e) {
       setStudents([]);
     }
@@ -99,11 +97,15 @@ export default function RemarksScreen() {
     setLoading(true);
     try {
       const res = await API.get(`/remarks/student/${selectedStudentId}`);
-      const data = (res as any)?.data ?? res;
-      const list = data?.remarks ?? [];
+      const root = (res as any)?.data ?? res;
+      const payload = root?.data ?? root;
+      const list = payload?.remarks ?? [];
       setRemarks(Array.isArray(list) ? list : []);
-    } catch (_e) {
+    } catch (e: any) {
       setRemarks([]);
+      if (__DEV__) {
+        console.error('[Remarks] load failed:', e?.message ?? e);
+      }
     } finally {
       setLoading(false);
     }
@@ -122,6 +124,12 @@ export default function RemarksScreen() {
     if (selectedClassId) loadStudents();
   }, [selectedClassId, loadStudents]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedStudentId) loadRemarks();
+    }, [selectedStudentId, loadRemarks]),
+  );
+
   useEffect(() => {
     loadRemarks();
   }, [selectedStudentId, loadRemarks]);
@@ -139,16 +147,24 @@ export default function RemarksScreen() {
     }
     setSaving(true);
     try {
-      await API.post('/remarks', {
+      const res = await API.post('/remarks', {
         studentId: selectedStudentId,
-        teacherId: (userData as any)?.id ?? (userData as any)?.userId,
         content: content.trim(),
         type,
       });
+      const root = (res as any)?.data ?? res;
+      const ok = root?.success !== false && (root?.data?.remark || root?.remark || res);
+      if (!ok) {
+        throw new Error(root?.message || 'Server did not confirm the remark was saved.');
+      }
+      if (__DEV__) {
+        console.log('[Remarks] POST /remarks success:', root);
+      }
       setContent('');
-      loadRemarks();
+      await loadRemarks();
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to save remark.');
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to save remark.';
+      Alert.alert('Error', msg);
     } finally {
       setSaving(false);
     }

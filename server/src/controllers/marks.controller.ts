@@ -53,7 +53,7 @@ export const marksController = {
 
       // Validate marks
       if (typeof marksObtained !== 'number' || marksObtained < 0) {
-        throw new ValidationError('marksObtained must be a non-negative number');
+        throw new ValidationError('Marks cannot be negative');
       }
 
       // Verify exam exists and belongs to teacher's school
@@ -87,9 +87,8 @@ export const marksController = {
         }
       }
 
-      // Validate marks don't exceed max marks
       if (marksObtained > exam.maxMarks) {
-        throw new ValidationError(`Marks obtained (${marksObtained}) cannot exceed maximum marks (${exam.maxMarks})`);
+        throw new ValidationError('Marks cannot exceed maximum');
       }
 
       // Verify student exists and belongs to the same school
@@ -290,11 +289,11 @@ export const marksController = {
       // Validate marks if provided
       if (marksObtained !== undefined) {
         if (typeof marksObtained !== 'number' || marksObtained < 0) {
-          throw new ValidationError('marksObtained must be a non-negative number');
+          throw new ValidationError('Marks cannot be negative');
         }
 
         if (marksObtained > existingMarks.exam.maxMarks) {
-          throw new ValidationError(`Marks obtained (${marksObtained}) cannot exceed maximum marks (${existingMarks.exam.maxMarks})`);
+          throw new ValidationError('Marks cannot exceed maximum');
         }
       }
 

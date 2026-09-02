@@ -42,6 +42,16 @@ function getGrade(marksStr: string, maxMarks: number, primary: string): { label:
   return { label: 'F', bg: T.dangerTint, text: T.danger };
 }
 
+function marksExceedsMax(value: string, maxMarks: number): boolean {
+  if (!value.trim()) return false;
+  const n = parseInt(value.replace(/[^0-9]/g, ''), 10);
+  return !Number.isNaN(n) && n > maxMarks;
+}
+
+function parseMarksDigits(raw: string): string {
+  return raw.replace(/[^0-9]/g, '');
+}
+
 function apiErrorMessage(err: unknown): string {
   const e = err as { response?: { data?: { message?: string } }; message?: string };
   return e?.response?.data?.message ?? e?.message ?? 'Request failed';
@@ -240,8 +250,8 @@ export default function MarksEntryScreen() {
         const val = marksMap[s.id]?.trim();
         if (val === '') continue;
         const num = parseFloat(val);
-        if (isNaN(num) || num < 0) continue;
-        const marksObtained = Math.min(num, total);
+        if (isNaN(num) || num < 0 || num > total) continue;
+        const marksObtained = num;
         const existingMarkId = savedMarkIds[s.id];
 
         try {
@@ -281,6 +291,7 @@ export default function MarksEntryScreen() {
 
   const total = parseInt(totalMarks, 10) || 100;
   const markedCount = students.filter((s) => marksMap[s.id]?.trim() !== '').length;
+  const hasInvalidMarks = students.some((s) => marksExceedsMax(marksMap[s.id] ?? '', total));
   const isRestricted = !classesLoading && !classesError && classes.length === 0;
 
   return (
@@ -442,8 +453,11 @@ export default function MarksEntryScreen() {
         ) : (
           students.map((s) => {
             const grade = getGrade(marksMap[s.id] ?? '', total, primary);
+            const markVal = marksMap[s.id] ?? '';
+            const overMax = marksExceedsMax(markVal, total);
             return (
-              <View key={s.id} style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', ...T.shadowSm }}>
+              <View key={s.id} style={{ marginBottom: 10 }}>
+              <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, flexDirection: 'row', alignItems: 'center', ...T.shadowSm }}>
                 <TouchableOpacity
                   onPress={() => openHistory(s)}
                   activeOpacity={0.85}
@@ -463,21 +477,36 @@ export default function MarksEntryScreen() {
                     backgroundColor: '#FFFFFF',
                     borderRadius: 12,
                     borderWidth: 1,
-                    borderColor: T.inputBorder,
-                    color: T.primary,
+                    borderColor: overMax ? T.danger : T.inputBorder,
+                    color: overMax ? T.danger : T.primary,
                     fontWeight: '900',
                     fontSize: 20,
                     textAlign: 'center',
                   }}
                   placeholder="0"
                   placeholderTextColor={T.textPlaceholder}
-                  value={marksMap[s.id] ?? ''}
-                  onChangeText={(t) => setMarksMap((m) => ({ ...m, [s.id]: t }))}
+                  value={markVal}
+                  onChangeText={(t) => {
+                    const cleaned = parseMarksDigits(t);
+                    if (cleaned === '') {
+                      setMarksMap((m) => ({ ...m, [s.id]: '' }));
+                      return;
+                    }
+                    const n = parseInt(cleaned, 10);
+                    if (!Number.isNaN(n) && n > total) return;
+                    setMarksMap((m) => ({ ...m, [s.id]: cleaned }));
+                  }}
                   keyboardType="numeric"
                 />
                 <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: grade.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }}>
                   <Text style={{ color: grade.text, fontWeight: '900', fontSize: 12 }}>{grade.label}</Text>
                 </View>
+              </View>
+              {overMax ? (
+                <Text style={{ color: T.danger, fontSize: 11, marginTop: 4, marginLeft: 4 }}>
+                  Cannot exceed {total} marks
+                </Text>
+              ) : null}
               </View>
             );
           })
@@ -511,6 +540,7 @@ export default function MarksEntryScreen() {
             fullWidth={false}
             style={{ paddingHorizontal: 24 }}
             loading={saving}
+            disabled={hasInvalidMarks}
           />
         </View>
       </View>

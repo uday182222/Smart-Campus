@@ -6,27 +6,36 @@ import { logger } from '../utils/logger';
 
 const prisma = new PrismaClient();
 
-/** Students linked to a class via distinct attendance records (same as getOne). */
-async function resolveClassStudents(classId: string) {
-  const attendanceRecords = await prisma.attendance.findMany({
-    where: { classId },
-    select: { studentId: true },
-    distinct: ['studentId'],
+/** Live student count per class (enrollment via users.metadata.classId). */
+async function liveStudentCountsForSchool(schoolId: string): Promise<Map<string, number>> {
+  const students = await prisma.user.findMany({
+    where: { role: 'STUDENT', schoolId },
+    select: { metadata: true },
   });
-  const studentIds = attendanceRecords.map((a) => a.studentId);
-  if (!studentIds.length) return [];
+  const counts = new Map<string, number>();
+  for (const s of students) {
+    const cid = (s.metadata as { classId?: string } | null)?.classId;
+    if (!cid) continue;
+    counts.set(cid, (counts.get(cid) ?? 0) + 1);
+  }
+  return counts;
+}
 
-  const users = await prisma.user.findMany({
-    where: { id: { in: studentIds }, role: 'STUDENT' },
+/** Students enrolled in a class (users.metadata.classId), matching teacher.controller getClassStudents. */
+async function resolveClassStudents(classId: string, schoolId: string) {
+  const students = await prisma.user.findMany({
+    where: { role: 'STUDENT', schoolId },
     select: { id: true, name: true, photo: true, metadata: true },
+    orderBy: { name: 'asc' },
   });
-
-  return users.map((u) => ({
-    id: u.id,
-    name: u.name,
-    rollNumber: (u.metadata as { rollNumber?: string } | null)?.rollNumber ?? '',
-    photo: u.photo,
-  }));
+  return students
+    .filter((s) => (s.metadata as { classId?: string } | null)?.classId === classId)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      photo: s.photo ?? null,
+      rollNumber: (s.metadata as { rollNumber?: string } | null)?.rollNumber ?? null,
+    }));
 }
 
 export const classController = {
@@ -48,7 +57,12 @@ export const classController = {
         },
       },
     });
-    return res.json({ success: true, data: { classes } });
+    const studentCounts = await liveStudentCountsForSchool(schoolId);
+    const classesWithLiveCounts = classes.map((cls) => ({
+      ...cls,
+      currentStudents: studentCounts.get(cls.id) ?? 0,
+    }));
+    return res.json({ success: true, data: { classes: classesWithLiveCounts } });
   },
 
   /** GET /classes/today — get today's classes for the logged-in teacher */
@@ -90,12 +104,12 @@ export const classController = {
     });
     if (!cls) throw new AppError('Class not found', 404);
 
-    const students = await resolveClassStudents(id);
+    const students = await resolveClassStudents(id, cls.schoolId);
 
     return res.json({
       success: true,
       data: {
-        class: cls,
+        class: { ...cls, currentStudents: students.length },
         students,
       },
     });
@@ -114,7 +128,7 @@ export const classController = {
         throw new ForbiddenError('Access denied: class does not belong to your school');
       }
 
-      const students = await resolveClassStudents(classId);
+      const students = await resolveClassStudents(classId, schoolId);
       return res.json({ success: true, data: students });
     } catch (error) {
       logger.error('listStudents error:', error);

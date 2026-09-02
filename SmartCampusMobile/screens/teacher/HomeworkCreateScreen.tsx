@@ -67,7 +67,7 @@ export default function HomeworkCreateScreen() {
       setFileUri(file.uri);
       setFileName(file.name || 'File');
     } catch (_e) {
-      Alert.alert('Info', 'File attachment requires expo-document-picker.');
+      Alert.alert('Info', 'File attachments are coming soon.');
     }
   };
 
@@ -108,7 +108,8 @@ export default function HomeworkCreateScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: T.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <View style={{ paddingTop: insets.top + 12, paddingHorizontal: T.px, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

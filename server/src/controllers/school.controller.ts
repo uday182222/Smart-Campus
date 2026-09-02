@@ -106,11 +106,13 @@ export const schoolController = {
     return res.json({ success: true, data: classes });
   },
 
-  /** POST /schools/:id/logo — upload logo (SUPER_ADMIN or that school's ADMIN). Multipart field: logo */
+  /** POST /schools/:id/logo — upload logo (SUPER_ADMIN or that school's ADMIN/PRINCIPAL). Multipart field: logo */
   async uploadLogo(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const user = req.user!;
-    if (user.role !== 'SUPER_ADMIN' && (user.role !== 'ADMIN' || user.schoolId !== id)) {
+    const isSchoolStaff =
+      (user.role === 'ADMIN' || user.role === 'PRINCIPAL') && user.schoolId === id;
+    if (user.role !== 'SUPER_ADMIN' && !isSchoolStaff) {
       throw new AppError('Forbidden', 403);
     }
     const school = await prisma.school.findUnique({ where: { id } });

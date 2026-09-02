@@ -82,12 +82,10 @@ export default function SchoolProfileScreen() {
         type: 'image/jpeg',
         name: 'logo.jpg',
       } as any);
-      // Prefer the dedicated endpoint once the server implements it:
-      // PATCH /api/v1/schools/:schoolId/logo (multipart/form-data, field: 'logo')
       const schoolId = (userData as any)?.schoolId || theme.schoolId;
       const axios = (apiClient as any).getAxiosInstance?.();
       if (!axios || !schoolId) throw new Error('Missing schoolId');
-      const res = await axios.patch(`/schools/${encodeURIComponent(String(schoolId))}/logo`, formData, {
+      const res = await axios.post(`/schools/${encodeURIComponent(String(schoolId))}/logo`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -106,7 +104,7 @@ export default function SchoolProfileScreen() {
         throw new Error('Upload did not return logoUrl');
       }
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || 'Upload failed. Please try again.');
+      Alert.alert('Error', 'Logo upload is not available yet. This will be enabled shortly.');
     } finally {
       setUploadingLogo(false);
     }
