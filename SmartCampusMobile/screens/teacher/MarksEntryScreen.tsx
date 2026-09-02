@@ -369,181 +369,185 @@ export default function MarksEntryScreen() {
         </View>
       ) : (
         <>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }} showsVerticalScrollIndicator={false}>
-        <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 8, ...T.shadowSm }}>
-          <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>Exam Setup</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-            {EXAM_TYPES.map((t) => {
-              const isActive = examType === t;
-              return (
-                <TouchableOpacity
-                  key={t}
-                  onPress={() => setExamType(t)}
-                  style={{
-                    backgroundColor: isActive ? T.primary : T.card,
-                    borderRadius: 999,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderWidth: 1.5,
-                    borderColor: isActive ? T.primary : T.inputBorder,
-                  }}
-                >
-                  <Text style={{ color: isActive ? '#FFFFFF' : T.textDark, fontWeight: isActive ? '900' : '600', fontSize: 13 }}>{t}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-            <TextInput
-              style={{
-                flex: 2,
-                backgroundColor: T.card,
-                borderRadius: T.radius.lg,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                color: T.textDark,
-                fontSize: 15,
-                borderWidth: 1,
-                borderColor: T.inputBorder,
-              }}
-              placeholder="Subject"
-              placeholderTextColor={T.textPlaceholder}
-              value={subject}
-              onChangeText={setSubject}
-            />
-            <TextInput
-              style={{
-                flex: 1,
-                backgroundColor: T.card,
-                borderRadius: T.radius.lg,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                color: T.textDark,
-                fontSize: 15,
-                borderWidth: 1,
-                borderColor: T.inputBorder,
-              }}
-              placeholder="Max"
-              placeholderTextColor={T.textPlaceholder}
-              value={totalMarks}
-              onChangeText={setTotalMarks}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        <Text style={{ color: T.textDark, fontSize: 20, fontWeight: '900', marginTop: 16 }}>Students</Text>
-        <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2, marginBottom: 12 }}>Enter marks for each student</Text>
-
-        {studentsError ? (
-          <View style={{ backgroundColor: T.dangerTint, borderRadius: 12, padding: 12, marginBottom: 12 }}>
-            <Text style={{ color: T.danger, fontSize: 13, fontWeight: '600' }}>{studentsError}</Text>
-            <TouchableOpacity onPress={loadStudents} style={{ marginTop: 8 }}>
-              <Text style={{ color: T.primary, fontWeight: '700', fontSize: 13 }}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        {loading ? (
-          <View style={{ gap: 8 }}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <View key={i} style={{ backgroundColor: T.card, borderRadius: 14, height: 64, marginBottom: 8, ...T.shadowSm }} />
-            ))}
-          </View>
-        ) : (
-          students.map((s) => {
-            const grade = getGrade(marksMap[s.id] ?? '', total, primary);
-            const markVal = marksMap[s.id] ?? '';
-            const overMax = marksExceedsMax(markVal, total);
-            return (
-              <View key={s.id} style={{ marginBottom: 10 }}>
-              <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, flexDirection: 'row', alignItems: 'center', ...T.shadowSm }}>
-                <TouchableOpacity
-                  onPress={() => openHistory(s)}
-                  activeOpacity={0.85}
-                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                >
-                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>{getInitials(s.name)}</Text>
-                  </View>
-                  <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15, flex: 1, marginLeft: 12 }} numberOfLines={1}>
-                    {s.name}
-                  </Text>
-                </TouchableOpacity>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: T.px, paddingBottom: scrollPadWithNavAndBar(insets.bottom) }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 20, marginTop: 8, ...T.shadowSm }}>
+              <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15 }}>Exam Setup</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                {EXAM_TYPES.map((t) => {
+                  const isActive = examType === t;
+                  return (
+                    <TouchableOpacity
+                      key={t}
+                      onPress={() => setExamType(t)}
+                      style={{
+                        backgroundColor: isActive ? T.primary : T.card,
+                        borderRadius: 999,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderWidth: 1.5,
+                        borderColor: isActive ? T.primary : T.inputBorder,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#FFFFFF' : T.textDark, fontWeight: isActive ? '900' : '600', fontSize: 13 }}>{t}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
                 <TextInput
                   style={{
-                    width: 72,
-                    height: 48,
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 12,
+                    flex: 2,
+                    backgroundColor: T.card,
+                    borderRadius: T.radius.lg,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    color: T.textDark,
+                    fontSize: 15,
                     borderWidth: 1,
-                    borderColor: overMax ? T.danger : T.inputBorder,
-                    color: overMax ? T.danger : T.primary,
-                    fontWeight: '900',
-                    fontSize: 20,
-                    textAlign: 'center',
+                    borderColor: T.inputBorder,
                   }}
-                  placeholder="0"
+                  placeholder="Subject"
                   placeholderTextColor={T.textPlaceholder}
-                  value={markVal}
-                  onChangeText={(t) => {
-                    const cleaned = parseMarksDigits(t);
-                    if (cleaned === '') {
-                      setMarksMap((m) => ({ ...m, [s.id]: '' }));
-                      return;
-                    }
-                    const n = parseInt(cleaned, 10);
-                    if (!Number.isNaN(n) && n > total) return;
-                    setMarksMap((m) => ({ ...m, [s.id]: cleaned }));
+                  value={subject}
+                  onChangeText={setSubject}
+                />
+                <TextInput
+                  style={{
+                    flex: 1,
+                    backgroundColor: T.card,
+                    borderRadius: T.radius.lg,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    color: T.textDark,
+                    fontSize: 15,
+                    borderWidth: 1,
+                    borderColor: T.inputBorder,
                   }}
+                  placeholder="Max"
+                  placeholderTextColor={T.textPlaceholder}
+                  value={totalMarks}
+                  onChangeText={setTotalMarks}
                   keyboardType="numeric"
                 />
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: grade.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }}>
-                  <Text style={{ color: grade.text, fontWeight: '900', fontSize: 12 }}>{grade.label}</Text>
-                </View>
               </View>
-              {overMax ? (
-                <Text style={{ color: T.danger, fontSize: 11, marginTop: 4, marginLeft: 4 }}>
-                  Cannot exceed {total} marks
-                </Text>
-              ) : null}
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
+            </View>
 
-      <View
-        style={{
-          position: 'absolute',
-          bottom: barBottomWithNav(insets.bottom),
-          left: 0,
-          right: 0,
-          backgroundColor: T.card,
-          paddingTop: 12,
-          paddingHorizontal: T.px,
-          paddingBottom: 12,
-          borderTopWidth: 1,
-          borderTopColor: T.inputBorder,
-          zIndex: 50,
-          ...T.shadowLg,
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ color: T.textMuted, fontSize: 14 }}>{markedCount} students marked</Text>
-          <LightButton
-            label="Save All Marks"
-            onPress={saveAll}
-            variant="primary"
-            icon="checkmark-circle-outline"
-            iconPosition="left"
-            fullWidth={false}
-            style={{ paddingHorizontal: 24 }}
-            loading={saving}
-            disabled={hasInvalidMarks}
-          />
-        </View>
-      </View>
+            <Text style={{ color: T.textDark, fontSize: 20, fontWeight: '900', marginTop: 16 }}>Students</Text>
+            <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 2, marginBottom: 12 }}>Enter marks for each student</Text>
+
+            {studentsError ? (
+              <View style={{ backgroundColor: T.dangerTint, borderRadius: 12, padding: 12, marginBottom: 12 }}>
+                <Text style={{ color: T.danger, fontSize: 13, fontWeight: '600' }}>{studentsError}</Text>
+                <TouchableOpacity onPress={loadStudents} style={{ marginTop: 8 }}>
+                  <Text style={{ color: T.primary, fontWeight: '700', fontSize: 13 }}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {loading ? (
+              <View style={{ gap: 8 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <View key={i} style={{ backgroundColor: T.card, borderRadius: 14, height: 64, marginBottom: 8, ...T.shadowSm }} />
+                ))}
+              </View>
+            ) : (
+              students.map((s) => {
+                const grade = getGrade(marksMap[s.id] ?? '', total, primary);
+                const markVal = marksMap[s.id] ?? '';
+                const overMax = marksExceedsMax(markVal, total);
+                return (
+                  <View key={s.id} style={{ marginBottom: 10 }}>
+                    <View style={{ backgroundColor: T.card, borderRadius: T.radius.xxl, padding: 16, flexDirection: 'row', alignItems: 'center', ...T.shadowSm }}>
+                      <TouchableOpacity
+                        onPress={() => openHistory(s)}
+                        activeOpacity={0.85}
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                      >
+                        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' }}>
+                          <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 12 }}>{getInitials(s.name)}</Text>
+                        </View>
+                        <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 15, flex: 1, marginLeft: 12 }} numberOfLines={1}>
+                          {s.name}
+                        </Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={{
+                          width: 72,
+                          height: 48,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: overMax ? T.danger : T.inputBorder,
+                          color: overMax ? T.danger : T.primary,
+                          fontWeight: '900',
+                          fontSize: 20,
+                          textAlign: 'center',
+                        }}
+                        placeholder="0"
+                        placeholderTextColor={T.textPlaceholder}
+                        value={markVal}
+                        onChangeText={(t) => {
+                          const cleaned = parseMarksDigits(t);
+                          if (cleaned === '') {
+                            setMarksMap((m) => ({ ...m, [s.id]: '' }));
+                            return;
+                          }
+                          const n = parseInt(cleaned, 10);
+                          if (!Number.isNaN(n) && n > total) return;
+                          setMarksMap((m) => ({ ...m, [s.id]: cleaned }));
+                        }}
+                        keyboardType="numeric"
+                      />
+                      <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: grade.bg, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }}>
+                        <Text style={{ color: grade.text, fontWeight: '900', fontSize: 12 }}>{grade.label}</Text>
+                      </View>
+                    </View>
+                    {overMax ? (
+                      <Text style={{ color: T.danger, fontSize: 11, marginTop: 4, marginLeft: 4 }}>
+                        Cannot exceed {total} marks
+                      </Text>
+                    ) : null}
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+
+          <View
+            style={{
+              position: 'absolute',
+              bottom: barBottomWithNav(insets.bottom),
+              left: 0,
+              right: 0,
+              backgroundColor: T.card,
+              paddingTop: 12,
+              paddingHorizontal: T.px,
+              paddingBottom: 12,
+              borderTopWidth: 1,
+              borderTopColor: T.inputBorder,
+              zIndex: 50,
+              ...T.shadowLg,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ color: T.textMuted, fontSize: 14 }}>{markedCount} students marked</Text>
+              <LightButton
+                label="Save All Marks"
+                onPress={saveAll}
+                variant="primary"
+                icon="checkmark-circle-outline"
+                iconPosition="left"
+                fullWidth={false}
+                style={{ paddingHorizontal: 24 }}
+                loading={saving}
+                disabled={hasInvalidMarks}
+              />
+            </View>
+          </View>
         </>
       )}
       <TeacherFloatingNav navigation={navigation} activeTab="TeacherClasses" />

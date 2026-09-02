@@ -36,7 +36,6 @@ export interface ErrorLog {
   reportedToServer: boolean;
 }
 
-// Initialize Sentry (optional — sentry-expo not bundled in this project)
 export const initializeErrorTracking = () => {
   if (__DEV__) {
     console.log('Error tracking disabled in development');
@@ -61,9 +60,6 @@ export class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo.componentStack);
-    logError(createAppError('unknown', error.message, error, {
-      componentStack: errorInfo.componentStack,
-    }));
   }
 
   handleRetry = () => {
