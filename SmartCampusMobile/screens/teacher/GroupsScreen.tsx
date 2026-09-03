@@ -236,6 +236,26 @@ export default function GroupsScreen() {
     );
   }, [students, memberSearch]);
 
+  const filteredIds = useMemo(() => filteredStudents.map((s) => s.id), [filteredStudents]);
+  const selectedInFilterCount = useMemo(
+    () => filteredIds.filter((id) => selectedMemberIds.has(id)).length,
+    [filteredIds, selectedMemberIds]
+  );
+  const allFilteredSelected = filteredIds.length > 0 && selectedInFilterCount === filteredIds.length;
+  const someFilteredSelected = selectedInFilterCount > 0 && !allFilteredSelected;
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        for (const id of filteredIds) next.delete(id);
+      } else {
+        for (const id of filteredIds) next.add(id);
+      }
+      return next;
+    });
+  };
+
   const renderMemberPicker = (forAdd = false) => (
     <>
       <View
@@ -258,7 +278,43 @@ export default function GroupsScreen() {
           style={{ flex: 1, color: T.textDark, fontSize: 14 }}
         />
       </View>
-      <ScrollView style={{ maxHeight: 280, marginTop: 12 }}>
+
+      <TouchableOpacity
+        onPress={toggleSelectAllFiltered}
+        disabled={filteredIds.length === 0}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 12,
+          marginTop: 4,
+          opacity: filteredIds.length === 0 ? 0.5 : 1,
+        }}
+      >
+        <View
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            borderWidth: 2,
+            borderColor: allFilteredSelected || someFilteredSelected ? primary : T.inputBorder,
+            backgroundColor: allFilteredSelected ? primary : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 12,
+          }}
+        >
+          {allFilteredSelected ? (
+            <Text style={{ color: T.textWhite, fontWeight: '900', fontSize: 12 }}>✓</Text>
+          ) : someFilteredSelected ? (
+            <View style={{ width: 10, height: 2, backgroundColor: primary, borderRadius: 1 }} />
+          ) : null}
+        </View>
+        <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 14 }}>
+          Select all recipients ({filteredIds.length})
+        </Text>
+      </TouchableOpacity>
+
+      <ScrollView style={{ maxHeight: 280, marginTop: 4 }}>
         {filteredStudents.map((student) => {
           const checked = selectedMemberIds.has(student.id);
           return (

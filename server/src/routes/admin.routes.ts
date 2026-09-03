@@ -41,6 +41,7 @@ router.get(
 router.get('/fees/management', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.getFeeManagement);
 router.get('/fees', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.getFeeManagement);
 router.patch('/fees/:feeId', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.updateFeeStatus);
+router.delete('/fees/:id', authMiddleware.authorize('ADMIN', 'PRINCIPAL'), adminController.deleteFeeStructure);
 router.post('/fees', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.addFeeEntry);
 router.post('/fees/class', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.addClassFee);
 router.post('/fees/reminders', authMiddleware.authorize('ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'), adminController.sendFeeReminders);

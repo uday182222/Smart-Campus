@@ -19,7 +19,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Search, School, Download, Megaphone, Plus, Users } from 'lucide-react-native';
+import { ChevronLeft, Search, School, Megaphone, Trash2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LightButton, Pressable3D } from '../../components/ui';
 import { T } from '../../constants/theme';
@@ -54,6 +54,7 @@ interface ClassSection {
 
 interface FeeManagementData {
   summary: { totalDue: number; totalPaid: number; totalOverdue: number; totalStudents: number };
+  structures?: Array<{ id: string; name: string; amount: number; dueDate: string | null; isActive: boolean }>;
   byClass: ClassSection[];
 }
 
@@ -134,6 +135,37 @@ export default function FeeReportScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Send', onPress: () => API.post('/admin/fees/reminders', { status: 'PENDING' }).then(() => { Alert.alert('Done', 'Reminders sent.'); load(); }).catch((e: any) => Alert.alert('Error', e?.message || 'Failed')) },
     ]);
+  };
+
+  const handleDeleteStructure = (structure: { id: string; name: string }) => {
+    Alert.alert(
+      `Delete ${structure.name}?`,
+      'This removes the fee structure for the school. If payments already exist, it will be deactivated instead.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await API.delete(`/admin/fees/${encodeURIComponent(structure.id)}`);
+              const payload = (res as any)?.data?.data ?? (res as any)?.data ?? res;
+              if (payload?.deactivated) {
+                Alert.alert(
+                  'Deactivated',
+                  'This fee could not be deleted because payments already exist. It was deactivated instead.'
+                );
+              } else {
+                Alert.alert('Deleted', `${structure.name} was removed.`);
+              }
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to delete fee');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleExport = async () => {
@@ -284,6 +316,38 @@ export default function FeeReportScreen() {
             <LightButton label="Export CSV" variant="ghost" icon="download-outline" onPress={handleExport} fullWidth />
           </View>
         </View>
+
+        {/* Fee structures */}
+        {(data?.structures ?? []).length > 0 ? (
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ color: T.textDark, fontSize: 17, fontWeight: '800', marginBottom: 8 }}>Fee Structures</Text>
+            {(data?.structures ?? []).map((s) => (
+              <View
+                key={s.id}
+                style={{
+                  backgroundColor: T.card,
+                  borderRadius: T.radius.xxl,
+                  padding: 16,
+                  marginBottom: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  ...T.shadowSm,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 15 }}>{s.name}</Text>
+                  <Text style={{ color: T.textMuted, fontSize: 12, marginTop: 4 }}>
+                    ₹{Number(s.amount).toLocaleString()}
+                    {s.dueDate ? ` · due ${s.dueDate}` : ''}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => handleDeleteStructure(s)} style={{ padding: 8 }}>
+                  <Trash2 size={18} color={T.danger} strokeWidth={1.8} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {/* Filter */}
         <RNScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} contentContainerStyle={{ paddingRight: 20 }}>

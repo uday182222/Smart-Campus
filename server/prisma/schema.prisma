@@ -650,6 +650,7 @@ enum RegistrationStatus {
   PENDING
   APPROVED
   REJECTED
+  EXPIRED
 }
 
 model RegistrationRequest {

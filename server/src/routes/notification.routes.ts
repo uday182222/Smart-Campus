@@ -14,6 +14,9 @@ router.post(
   notificationsController.sendNotification
 );
 
+// GET /api/notifications/sent - Notifications sent by the current user (must be before /:userId)
+router.get('/sent', notificationsController.getSentNotifications);
+
 // GET /api/notifications/:userId - Get notifications for a user
 router.get('/:userId', notificationsController.getUserNotifications);
 

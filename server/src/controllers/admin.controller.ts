@@ -20,6 +20,7 @@ interface CreateUserBody {
   role: 'TEACHER' | 'PARENT' | 'STUDENT' | 'OFFICE_STAFF' | 'BUS_HELPER';
   schoolId: string;
   phone?: string;
+  emergencyContact?: string;
   classIds?: string[];
   parentId?: string; // For students
 }
@@ -27,6 +28,7 @@ interface CreateUserBody {
 interface UpdateUserBody {
   name?: string;
   phone?: string;
+  emergencyContact?: string;
   classIds?: string[];
   status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
 }
@@ -84,6 +86,7 @@ export const adminController = {
         role,
         schoolId: userSchoolId,
         phone,
+        emergencyContact,
         classIds,
         parentId,
       }: CreateUserBody = req.body;
@@ -189,6 +192,9 @@ export const adminController = {
       }
       if (role === 'STUDENT' && parentId) {
         metadata.parentId = parentId;
+      }
+      if (typeof emergencyContact === 'string' && emergencyContact.trim()) {
+        metadata.emergencyContact = emergencyContact.trim();
       }
 
       // Create user in database
@@ -428,6 +434,7 @@ export const adminController = {
         phone: user.phone,
         status: user.status,
         photo: user.photo,
+        metadata: user.metadata,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -475,7 +482,7 @@ export const adminController = {
       const { userId } = req.params;
       const currentUserId = req.user?.id;
       const schoolId = req.user?.schoolId;
-      const { name, phone, classIds, status }: UpdateUserBody = req.body;
+      const { name, phone, emergencyContact, classIds, status }: UpdateUserBody = req.body;
 
       // Authorization check
       const allowedRoles = ['ADMIN', 'PRINCIPAL', 'SUPER_ADMIN'];
@@ -521,20 +528,27 @@ export const adminController = {
         }
       }
 
-      // Update metadata if classIds provided
-      if (classIds !== undefined) {
+      // Update metadata if classIds or emergencyContact provided
+      if (classIds !== undefined || emergencyContact !== undefined) {
         const metadata = (existingUser.metadata as any) || {};
-        if (classIds.length > 0) {
-          metadata.classId = classIds[0];
-          metadata.allClassIds = classIds;
-        } else {
-          delete metadata.classId;
-          delete metadata.allClassIds;
+        if (classIds !== undefined) {
+          if (classIds.length > 0) {
+            metadata.classId = classIds[0];
+            metadata.allClassIds = classIds;
+          } else {
+            delete metadata.classId;
+            delete metadata.allClassIds;
+          }
+        }
+        if (emergencyContact !== undefined) {
+          const trimmed = typeof emergencyContact === 'string' ? emergencyContact.trim() : '';
+          if (trimmed) metadata.emergencyContact = trimmed;
+          else delete metadata.emergencyContact;
         }
         updateData.metadata = metadata as any;
 
-        // Update teacher-class relationships if teacher
-        if (existingUser.role === 'TEACHER') {
+        // Update teacher-class relationships if teacher and classIds provided
+        if (classIds !== undefined && existingUser.role === 'TEACHER') {
           // Delete existing relationships
           await prisma.teacherClass.deleteMany({
             where: { teacherId: userId },
@@ -1433,6 +1447,8 @@ export const adminController = {
         data: {
           announcementId: announcement.id,
           type: 'announcement',
+          senderId: userId,
+          sendBatchId: announcement.id,
         },
         channels: ['push', 'in_app'],
         priority: notificationPriority,
@@ -2004,6 +2020,13 @@ export const adminController = {
             totalOverdue: Math.round(totalOverdue * 100) / 100,
             totalStudents: students.length,
           },
+          structures: structures.map((f) => ({
+            id: f.id,
+            name: f.name,
+            amount: f.amount,
+            dueDate: f.dueDate ? f.dueDate.toISOString().split('T')[0] : null,
+            isActive: f.isActive,
+          })),
           byClass,
         },
       });
@@ -2078,6 +2101,58 @@ export const adminController = {
         return res.status(error.statusCode).json({ success: false, message: error.message });
       }
       return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  },
+
+  /**
+   * DELETE /admin/fees/:id — Delete or deactivate a fee structure
+   */
+  async deleteFeeStructure(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const schoolId = req.user?.schoolId;
+      const { id } = req.params;
+      if (!schoolId) throw new ForbiddenError('School access required');
+      if (!id) throw new ValidationError('Fee structure id is required');
+
+      const structure = await prisma.feeStructure.findUnique({ where: { id } });
+      if (!structure) throw new NotFoundError('Fee structure not found');
+      if (structure.schoolId !== schoolId) {
+        throw new ForbiddenError('Fee structure does not belong to your school');
+      }
+
+      const paymentCount = await prisma.feePayment.count({
+        where: { feeStructureId: id },
+      });
+
+      if (paymentCount > 0) {
+        const updated = await prisma.feeStructure.update({
+          where: { id },
+          data: { isActive: false },
+        });
+        return res.json({
+          success: true,
+          data: {
+            id: updated.id,
+            deactivated: true,
+            deleted: false,
+            message: 'Fee structure has payments and was deactivated instead of deleted',
+          },
+        });
+      }
+
+      await prisma.feeStructure.delete({ where: { id } });
+      return res.json({
+        success: true,
+        data: {
+          id,
+          deactivated: false,
+          deleted: true,
+          message: 'Fee structure deleted',
+        },
+      });
+    } catch (error) {
+      logger.error('Error deleteFeeStructure:', error);
+      return next(error);
     }
   },
 

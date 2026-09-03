@@ -128,6 +128,71 @@ function isNotificationTypeEnabled(
 
 export const notificationsController = {
   /**
+   * GET /api/notifications/sent
+   * Aggregated notifications sent by the current user (newest first)
+   */
+  async getSentNotifications(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) throw new ForbiddenError('Authentication required');
+
+      const rows = await prisma.notification.findMany({
+        where: {
+          OR: [
+            { data: { path: ['fromUserId'], equals: userId } },
+            { data: { path: ['senderId'], equals: userId } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      });
+
+      type SentRow = {
+        id: string;
+        title: string;
+        message: string;
+        recipientCount: number;
+        sentAt: string;
+        createdAt: string;
+      };
+      const groups = new Map<string, SentRow>();
+
+      for (const n of rows) {
+        const meta = (n.data as Record<string, unknown> | null) || {};
+        const batchKey =
+          (typeof meta.sendBatchId === 'string' && meta.sendBatchId) ||
+          `${n.title}|${n.body}|${n.createdAt.toISOString().slice(0, 16)}`;
+        const existing = groups.get(batchKey);
+        if (existing) {
+          existing.recipientCount += 1;
+        } else {
+          const when = n.sentAt ?? n.createdAt;
+          groups.set(batchKey, {
+            id: batchKey,
+            title: n.title,
+            message: n.body,
+            recipientCount: 1,
+            sentAt: when.toISOString(),
+            createdAt: n.createdAt.toISOString(),
+          });
+        }
+      }
+
+      const list = Array.from(groups.values()).sort(
+        (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+      );
+
+      return res.json({ success: true, data: { notifications: list } });
+    } catch (error) {
+      logger.error('Error getting sent notifications:', error);
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({ success: false, message: error.message });
+      }
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  },
+
+  /**
    * POST /api/notifications/send
    * Send push notification to users
    */
@@ -240,6 +305,12 @@ export const notificationsController = {
 
       const isScheduled = scheduledDate && scheduledDate > new Date();
       const status = isScheduled ? 'scheduled' : 'pending';
+      const sendBatchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const payloadData = {
+        ...(data || {}),
+        senderId: userId,
+        sendBatchId,
+      };
 
       // Create notification records
       const notifications = await Promise.all(
@@ -250,7 +321,7 @@ export const notificationsController = {
               category: type,
               title,
               body: message,
-              data: data ? (data as any) : null,
+              data: payloadData as any,
               channels: ['push', 'in_app'] as any,
               priority,
               status,

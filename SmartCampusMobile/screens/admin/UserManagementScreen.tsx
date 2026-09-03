@@ -47,6 +47,7 @@ interface UserRow {
   schoolId: string | null;
   phone?: string;
   status?: string;
+  metadata?: { emergencyContact?: string } | null;
   children?: ParentChild[];
 }
 
@@ -133,6 +134,14 @@ function renderUserCard(
       <View style={{ flex: 1, marginLeft: 14 }}>
         <Text style={{ color: T.textDark, fontWeight: '800', fontSize: 16 }}>{item.name}</Text>
         <Text style={{ color: T.textMuted, fontSize: 13, marginTop: 4 }}>{item.email}</Text>
+        {item.phone ? (
+          <Text style={{ color: T.textBody, fontSize: 12, marginTop: 4 }}>Phone: {item.phone}</Text>
+        ) : null}
+        {item.metadata?.emergencyContact ? (
+          <Text style={{ color: T.textBody, fontSize: 12, marginTop: 2 }}>
+            Emergency: {item.metadata.emergencyContact}
+          </Text>
+        ) : null}
         {children && children.length > 0 ? (
           <View style={{ marginTop: 8, gap: 4 }}>
             {children.map((c) => (
@@ -222,7 +231,8 @@ export default function UserManagementScreen() {
     password: string;
     role: 'TEACHER' | 'PARENT' | 'STUDENT' | 'OFFICE_STAFF' | 'BUS_HELPER' | 'ADMIN';
     phone: string;
-  }>({ name: '', email: '', password: '', role: 'TEACHER', phone: '' });
+    emergencyContact: string;
+  }>({ name: '', email: '', password: '', role: 'TEACHER', phone: '', emergencyContact: '' });
   const [saving, setSaving] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
 
@@ -263,7 +273,7 @@ export default function UserManagementScreen() {
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({ name: '', email: '', password: '', role: 'TEACHER', phone: '' });
+    setForm({ name: '', email: '', password: '', role: 'TEACHER', phone: '', emergencyContact: '' });
     setModalVisible(true);
   };
 
@@ -275,6 +285,7 @@ export default function UserManagementScreen() {
       password: '',
       role: (u.role as any) || 'TEACHER',
       phone: u.phone || '',
+      emergencyContact: (u.metadata as { emergencyContact?: string } | null)?.emergencyContact || '',
     });
     setModalVisible(true);
   };
@@ -320,7 +331,11 @@ export default function UserManagementScreen() {
     setSaving(true);
     try {
       if (editingId) {
-        await apiClient.put(`/admin/user/${editingId}`, { name: form.name, phone: form.phone || undefined });
+        await apiClient.put(`/admin/user/${editingId}`, {
+          name: form.name,
+          phone: form.phone || undefined,
+          emergencyContact: form.emergencyContact.trim() || '',
+        });
         Alert.alert('Success', 'User updated.');
       } else {
         await apiClient.post('/admin/user', {
@@ -329,6 +344,7 @@ export default function UserManagementScreen() {
           role: form.role,
           schoolId,
           phone: form.phone || undefined,
+          emergencyContact: form.emergencyContact.trim() || undefined,
         });
         Alert.alert('Success', 'User created.');
       }
@@ -528,6 +544,13 @@ export default function UserManagementScreen() {
               </>
             )}
             <LightInput label="Phone" placeholder="Optional" value={form.phone} onChangeText={(t) => setForm((f) => ({ ...f, phone: t }))} keyboardType="phone-pad" />
+            <LightInput
+              label="Emergency Contact"
+              placeholder="Optional"
+              value={form.emergencyContact}
+              onChangeText={(t) => setForm((f) => ({ ...f, emergencyContact: t }))}
+              keyboardType="phone-pad"
+            />
             <LightButton label={editingId ? 'Save changes' : 'Create user'} variant="primary" onPress={saveUser} loading={saving} style={{ marginTop: 16 }} />
             {editingId && editingId !== currentUserId ? (
               <TouchableOpacity

@@ -13,10 +13,11 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronLeft, Lock } from 'lucide-react-native';
+import { ChevronLeft, Lock, Download } from 'lucide-react-native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { LightButton } from '../../components/ui';
 import { T, barBottomWithNav, scrollPadWithNavAndBar } from '../../constants/theme';
@@ -91,6 +92,20 @@ function formatExamTypeLabel(examType?: string): string {
   return examType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function csvEscape(val: string | number | null | undefined): string {
+  const s = String(val ?? '');
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function slugPart(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '')
+    .slice(0, 40) || 'na';
+}
+
 export default function MarksEntryScreen() {
   const { theme } = useSchoolTheme();
   const primary = theme.primaryColor || T.primary;
@@ -100,7 +115,7 @@ export default function MarksEntryScreen() {
   const [classes, setClasses] = useState<Array<{ id: string; name: string; section?: string }>>([]);
   const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClassId, setSelectedClassId] = useState('');
-  const [students, setStudents] = useState<Array<{ id: string; name: string }>>([]);
+  const [students, setStudents] = useState<Array<{ id: string; name: string; rollNumber?: string | null }>>([]);
   const [subject, setSubject] = useState('');
   const [examType, setExamType] = useState('Quiz');
   const [totalMarks, setTotalMarks] = useState('100');
@@ -165,7 +180,11 @@ export default function MarksEntryScreen() {
     setStudentsError(null);
     try {
       const res = await ClassService.getTeacherClassStudents(selectedClassId);
-      const list = (res.data ?? []).map((s: any) => ({ id: s.id, name: s.name ?? 'Student' }));
+      const list = (res.data ?? []).map((s: any) => ({
+        id: s.id,
+        name: s.name ?? 'Student',
+        rollNumber: s.rollNumber ?? s.metadata?.rollNumber ?? null,
+      }));
       setStudents(list);
       setMarksMap({});
       setSavedMarkIds({});
@@ -293,6 +312,42 @@ export default function MarksEntryScreen() {
   const markedCount = students.filter((s) => marksMap[s.id]?.trim() !== '').length;
   const hasInvalidMarks = students.some((s) => marksExceedsMax(marksMap[s.id] ?? '', total));
   const isRestricted = !classesLoading && !classesError && classes.length === 0;
+  const canExport = !isRestricted && students.length > 0 && markedCount > 0;
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const classLabel = selectedClass?.name?.trim() || 'class';
+  const examLabel = subject.trim() || examType || 'exam';
+
+  const exportMarksCsv = async () => {
+    if (!canExport) {
+      Alert.alert('No Data', 'Enter marks before exporting.');
+      return;
+    }
+    try {
+      const headers = ['Roll Number', 'Student Name', 'Marks Obtained', 'Max Marks', 'Percentage', 'Grade'];
+      const rows = students
+        .filter((s) => marksMap[s.id]?.trim() !== '')
+        .map((s) => {
+          const markVal = marksMap[s.id]?.trim() ?? '';
+          const obtained = parseFloat(markVal);
+          const pct = !Number.isNaN(obtained) && total > 0 ? Math.round((obtained / total) * 100) : '';
+          const grade = getGrade(markVal, total, primary).label;
+          return [
+            csvEscape(s.rollNumber ?? ''),
+            csvEscape(s.name),
+            csvEscape(Number.isNaN(obtained) ? '' : obtained),
+            csvEscape(total),
+            csvEscape(pct),
+            csvEscape(grade),
+          ].join(',');
+        });
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const title = `marks-${slugPart(classLabel)}-${slugPart(examLabel)}-${dateStr}.csv`;
+      await Share.share({ message: csvContent, title });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -315,7 +370,22 @@ export default function MarksEntryScreen() {
             <ChevronLeft size={20} color={T.textDark} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={{ ...T.font.appTitle, color: T.textDark, flex: 1, textAlign: 'center' }}>Enter Marks</Text>
-          <View style={{ width: 44, height: 44 }} />
+          <TouchableOpacity
+            onPress={exportMarksCsv}
+            disabled={!canExport}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: T.card,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: canExport ? 1 : 0.35,
+              ...T.shadowSm,
+            }}
+          >
+            <Download size={20} color={canExport ? T.textDark : T.textPlaceholder} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
 
         {classesError ? (

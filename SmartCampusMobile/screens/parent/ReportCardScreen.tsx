@@ -3,11 +3,11 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Share, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, useNavigationState } from '@react-navigation/native';
-import { ArrowLeft, BookOpen } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Download } from 'lucide-react-native';
 import { useSchoolTheme } from '../../contexts/SchoolThemeContext';
 import { useActiveChild } from '../../contexts/ActiveChildContext';
 import { apiClient } from '../../services/apiClient';
@@ -30,6 +30,20 @@ function barColor(grade: string): string {
   if (g === 'B') return T.primary;
   if (g === 'C') return T.warning;
   return T.danger;
+}
+
+function csvEscape(val: string | number | null | undefined): string {
+  const s = String(val ?? '');
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function slugPart(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9-_]/g, '')
+    .slice(0, 40) || 'na';
 }
 
 export default function ReportCardScreen() {
@@ -91,6 +105,37 @@ export default function ReportCardScreen() {
   const className = activeChild?.className ?? children[0]?.className ?? '—';
   const avg = Math.round(Number(overall.average ?? 0));
   const grade = overall.grade ?? gradeLetter(avg);
+  const canExport = bySubject.some((entry: any) => (entry.entries ?? []).length > 0);
+
+  const exportReportCsv = async () => {
+    if (!canExport) {
+      Alert.alert('No Data', 'No marks available to export.');
+      return;
+    }
+    try {
+      const headers = ['Subject', 'Marks Obtained', 'Max Marks', 'Percentage', 'Grade'];
+      const rows: string[] = [];
+      for (const entry of bySubject) {
+        const entries = entry.entries ?? [];
+        if (entries.length === 0) continue;
+        const avgMarks =
+          entries.reduce((s: number, e: any) => s + Number(e.marks ?? 0), 0) / Math.max(1, entries.length);
+        const maxMarks = Number(entries[0]?.maxMarks ?? 100);
+        const rounded = Math.round(avgMarks);
+        const pct = maxMarks > 0 ? Math.min(100, Math.round((rounded / maxMarks) * 100)) : 0;
+        const g = entries[0]?.grade ?? gradeLetter(pct);
+        rows.push(
+          [csvEscape(entry.subject ?? ''), csvEscape(rounded), csvEscape(maxMarks), csvEscape(pct), csvEscape(g)].join(',')
+        );
+      }
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const title = `marks-${slugPart(className)}-report-card-${dateStr}.csv`;
+      await Share.share({ message: csvContent, title });
+    } catch {
+      Alert.alert('Error', 'Failed to export data. Please try again.');
+    }
+  };
 
   if (loading && !data) {
     return (
@@ -114,19 +159,36 @@ export default function ReportCardScreen() {
               <TouchableOpacity
                 onPress={onBackPress}
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: T.primaryLight,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: T.card,
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginRight: 12,
+                  ...T.shadowSm,
                 }}
               >
-                <ArrowLeft size={20} color={T.primary} strokeWidth={2} />
+                <ArrowLeft size={20} color={T.textDark} strokeWidth={1.8} />
               </TouchableOpacity>
             ) : null}
             <Text style={{ color: T.textWhite, fontSize: 26, fontWeight: '900', flex: 1 }}>Report Card</Text>
+            <TouchableOpacity
+              onPress={exportReportCsv}
+              disabled={!canExport}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: T.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: canExport ? 1 : 0.35,
+                ...T.shadowSm,
+              }}
+            >
+              <Download size={20} color={canExport ? T.textDark : T.textPlaceholder} strokeWidth={1.8} />
+            </TouchableOpacity>
           </View>
           <View style={{ marginTop: 10, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 }}>
             <Text style={{ color: T.textWhite, fontWeight: '700' }}>{childName}</Text>

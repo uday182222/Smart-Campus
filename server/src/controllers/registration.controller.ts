@@ -61,6 +61,22 @@ export const registrationController = {
   async getPendingRequests(req: AuthRequest, res: Response) {
     const schoolId = req.user!.schoolId;
     if (!schoolId) throw new AppError('School access required', 403);
+
+    // C48 — lazy expiry: PENDING older than 14 days → EXPIRED (retain row)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 14);
+    const expired = await prisma.registrationRequest.updateMany({
+      where: {
+        schoolId,
+        status: RegistrationStatus.PENDING,
+        createdAt: { lt: cutoff },
+      },
+      data: { status: RegistrationStatus.EXPIRED },
+    });
+    if (expired.count > 0) {
+      logger.info(`Expired ${expired.count} registration request(s) older than 14 days for school ${schoolId}`);
+    }
+
     const requests = await prisma.registrationRequest.findMany({
       where: { schoolId, status: RegistrationStatus.PENDING },
       orderBy: { createdAt: 'desc' },

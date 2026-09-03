@@ -7,14 +7,16 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Dimensions, A
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Bell,
-  Users,
   Layers,
   UserPlus,
   Megaphone,
   ChevronRight,
-  Wallet,
   CheckCircle,
+  Calendar,
+  Bus,
+  Building2,
 } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useSchoolTheme } from '../contexts/SchoolThemeContext';
@@ -49,14 +51,21 @@ interface PendingItem {
   createdAt: string;
 }
 
-const QUICK = [
-  { label: 'Announcements', sub: 'Broadcast', Icon: Megaphone, screen: 'Announcements' as const },
-  { label: 'Pending Requests', sub: 'Approvals', Icon: UserPlus, screen: 'PendingRequests' as const },
-  { label: 'Users', sub: 'Manage accounts', Icon: Users, screen: 'UserManagement' as const },
-  { label: 'Classes', sub: 'Sections & rooms', Icon: Layers, screen: 'ClassManagement' as const },
-  { label: 'Fees', sub: 'Collection', Icon: Wallet, screen: 'FeeReport' as const },
-  { label: 'Attendance', sub: 'Mark & track', Icon: CheckCircle, screen: 'AttendanceReport' as const },
-] as const;
+type QuickItem = {
+  label: string;
+  sub: string;
+  Icon: LucideIcon;
+  screen?: string;
+  disabled?: boolean;
+};
+
+const QUICK: QuickItem[] = [
+  { label: 'Events', sub: 'Calendar', Icon: Calendar, screen: 'Events' },
+  { label: 'Transport', sub: 'Routes & buses', Icon: Bus, screen: 'TransportManagement' },
+  { label: 'School Profile', sub: 'School settings', Icon: Building2, screen: 'SchoolProfile' },
+  { label: 'Attendance', sub: 'Upcoming feature', Icon: CheckCircle, disabled: true },
+  { label: 'Announcements', sub: 'Upcoming feature', Icon: Megaphone, disabled: true },
+];
 
 export default function ProductionAdminDashboard() {
   const { userData } = useAuth();
@@ -75,6 +84,8 @@ export default function ProductionAdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recent, setRecent] = useState<PendingItem[]>([]);
+  const [feeCollected, setFeeCollected] = useState(0);
+  const [feePending, setFeePending] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -87,15 +98,27 @@ export default function ProductionAdminDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [statsRes, requestsRes] = await Promise.all([API.get('/admin/stats'), API.get('/registration/requests')]);
+      const [statsRes, requestsRes, feesRes] = await Promise.all([
+        API.get('/admin/stats'),
+        API.get('/registration/requests'),
+        API.get('/admin/fees/management'),
+      ]);
       const statsData = (statsRes?.data?.data ?? statsRes?.data) as AdminStats | undefined;
       if (statsData) setStats(statsData);
       const reqData = (requestsRes?.data?.data ?? requestsRes?.data) as PendingItem[] | undefined;
       const list = Array.isArray(reqData) ? reqData : [];
       setRecent(list.slice(0, 3));
+
+      const feesRaw = (feesRes?.data?.data ?? feesRes?.data) as {
+        summary?: { totalDue?: number; totalPaid?: number };
+      } | null;
+      setFeeCollected(feesRaw?.summary?.totalPaid ?? 0);
+      setFeePending(feesRaw?.summary?.totalDue ?? 0);
     } catch (_e) {
       setStats(null);
       setRecent([]);
+      setFeeCollected(0);
+      setFeePending(0);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -128,18 +151,16 @@ export default function ProductionAdminDashboard() {
       .slice(0, 2) || '?';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning,' : hour < 17 ? 'Good Afternoon,' : 'Good Evening,';
-  const present = stats?.todayAttendance?.present ?? 0;
-  const absent = stats?.todayAttendance?.absent ?? 0;
-  const late = stats?.todayAttendance?.late ?? 0;
-  const pct = Math.round(stats?.todayAttendance?.percentage ?? 0);
-  const collected = stats?.totalFeesCollected ?? 0;
-  const due = stats?.totalFeesDue ?? 0;
+  const collected = feeCollected;
+  const due = feePending;
   const totalFees = collected + due || 1;
   const collectedPct = Math.min(100, (collected / totalFees) * 100);
   const rateLabel = `${Math.round(collectedPct)}% collection rate`;
+  const todayLine = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
   const schoolName = theme.schoolName || 'School';
-  const todayLine = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const role = (userData as any)?.role ?? '';
+  const quickItems = QUICK.filter((q) => q.disabled || !q.screen || canAccess(role, q.screen));
 
   if (loading && !stats) {
     return (
@@ -301,6 +322,7 @@ export default function ProductionAdminDashboard() {
           <Text style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>{roleLabel}</Text>
         </View>
 
+        {/* C52 — Fees Management (replaces Today's Attendance) */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], paddingHorizontal: T.px, marginTop: 20 }}>
           <View
             style={{
@@ -311,32 +333,28 @@ export default function ProductionAdminDashboard() {
             }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Today&apos;s Attendance</Text>
+              <Text style={{ color: T.textDark, fontWeight: '900', fontSize: 16 }}>Fees Management</Text>
               <Text style={{ color: T.textMuted, fontSize: 11, fontWeight: '700' }}>{todayLine}</Text>
             </View>
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
               <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.success, fontWeight: '900', fontSize: 22 }}>{present}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Present</Text>
+                <Text style={{ color: T.success, fontWeight: '900', fontSize: 22 }}>₹{collected.toLocaleString()}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Collected</Text>
               </View>
               <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.danger, fontWeight: '900', fontSize: 22 }}>{absent}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Absent</Text>
-              </View>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={{ color: T.warning, fontWeight: '900', fontSize: 22 }}>{late}</Text>
-                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Late</Text>
+                <Text style={{ color: T.danger, fontWeight: '900', fontSize: 22 }}>₹{due.toLocaleString()}</Text>
+                <Text style={{ color: T.textMuted, fontSize: 11, marginTop: 4 }}>Pending</Text>
               </View>
             </View>
 
             <View style={{ height: 4, backgroundColor: T.inputBorder, borderRadius: 2, overflow: 'hidden', marginTop: 14 }}>
-              <View style={{ height: 4, width: `${pct}%`, backgroundColor: T.primary }} />
+              <View style={{ height: 4, width: `${collectedPct}%`, backgroundColor: T.primary }} />
             </View>
 
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('AttendanceReport')}
+              onPress={() => navigation.navigate('FeeReport')}
               style={{
                 backgroundColor: T.primary,
                 borderRadius: T.radius.full,
@@ -345,7 +363,7 @@ export default function ProductionAdminDashboard() {
                 marginTop: 14,
               }}
             >
-              <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 13 }}>Mark Attendance</Text>
+              <Text style={{ color: T.textWhite, fontWeight: '800', fontSize: 13 }}>Open Fee Report</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -355,6 +373,7 @@ export default function ProductionAdminDashboard() {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }],
             flexDirection: 'row',
+            flexWrap: 'wrap',
             gap: 12,
             paddingHorizontal: T.px,
             marginTop: 12,
@@ -363,7 +382,13 @@ export default function ProductionAdminDashboard() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => navigation.navigate('ClassManagement')}
-            style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+            style={{
+              width: (SCREEN_W - T.px * 2 - 12) / 2,
+              backgroundColor: T.card,
+              borderRadius: T.radius.lg,
+              padding: 14,
+              ...T.shadowSm,
+            }}
           >
             <View
               style={{
@@ -389,7 +414,13 @@ export default function ProductionAdminDashboard() {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => navigation.navigate('PendingRequests')}
-            style={{ flex: 1, backgroundColor: T.card, borderRadius: T.radius.lg, padding: 14, ...T.shadowSm }}
+            style={{
+              width: (SCREEN_W - T.px * 2 - 12) / 2,
+              backgroundColor: T.card,
+              borderRadius: T.radius.lg,
+              padding: 14,
+              ...T.shadowSm,
+            }}
           >
             <View
               style={{
@@ -408,6 +439,39 @@ export default function ProductionAdminDashboard() {
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
               <Text style={{ fontSize: 26, fontWeight: '800', color: T.textDark, letterSpacing: -1, lineHeight: 30 }}>
                 {stats?.pendingRequests ?? 0}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* C53 — former Teachers tile position (removed in C42); now Announcements */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Announcements')}
+            style={{
+              width: (SCREEN_W - T.px * 2 - 12) / 2,
+              backgroundColor: T.card,
+              borderRadius: T.radius.lg,
+              padding: 14,
+              ...T.shadowSm,
+            }}
+          >
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: T.radius.sm,
+                backgroundColor: T.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <Megaphone size={16} color={T.primary} strokeWidth={1.8} />
+            </View>
+            <Text style={{ fontSize: 10, color: T.textPlaceholder, letterSpacing: 0.5, fontWeight: '600' }}>ANNOUNCEMENTS</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 3 }}>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: T.textDark, letterSpacing: -0.3, lineHeight: 22 }}>
+                Broadcast
               </Text>
             </View>
           </TouchableOpacity>
@@ -479,12 +543,16 @@ export default function ProductionAdminDashboard() {
           </View>
 
           <View style={{ paddingHorizontal: T.px, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-            {QUICK.filter((q) => canAccess((userData as any)?.role ?? '', q.screen)).map((q) => {
+            {quickItems.map((q) => {
               const Icon = q.Icon;
+              const disabled = !!q.disabled;
               return (
                 <TouchableOpacity
-                  key={q.screen}
-                  onPress={() => navigation.navigate(q.screen)}
+                  key={q.label}
+                  onPress={() => {
+                    if (!disabled && q.screen) navigation.navigate(q.screen);
+                  }}
+                  disabled={disabled}
                   style={{
                     width: (SCREEN_W - T.px * 2 - 12) / 2,
                     backgroundColor: T.card,
@@ -492,14 +560,26 @@ export default function ProductionAdminDashboard() {
                     padding: 16,
                     alignItems: 'center',
                     marginBottom: 12,
+                    opacity: disabled ? 0.45 : 1,
                     ...T.shadowSm,
                   }}
-                  activeOpacity={0.85}
+                  activeOpacity={disabled ? 1 : 0.85}
                 >
-                  <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: T.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={20} color={T.primary} strokeWidth={1.8} />
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      backgroundColor: disabled ? T.inputBorder : T.primaryLight,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon size={20} color={disabled ? T.textPlaceholder : T.primary} strokeWidth={1.8} />
                   </View>
-                  <Text style={{ color: T.textDark, fontWeight: '700', fontSize: 12, marginTop: 10, textAlign: 'center' }}>{q.label}</Text>
+                  <Text style={{ color: disabled ? T.textMuted : T.textDark, fontWeight: '700', fontSize: 12, marginTop: 10, textAlign: 'center' }}>
+                    {q.label}
+                  </Text>
                   <Text style={{ color: T.textMuted, fontSize: 10, marginTop: 4, textAlign: 'center' }}>{q.sub}</Text>
                 </TouchableOpacity>
               );

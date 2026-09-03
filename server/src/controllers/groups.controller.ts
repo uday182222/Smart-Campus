@@ -272,6 +272,8 @@ export const groupsController = {
         fromName: teacher?.name ?? 'Teacher',
         fromRole: teacher?.role ?? 'TEACHER',
         type: 'group_message',
+        senderId: teacherId,
+        sendBatchId: `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
       };
 
       await Promise.all(

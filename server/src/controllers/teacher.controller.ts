@@ -508,6 +508,8 @@ export const teacherController = {
         fromUserId: teacherId,
         fromName: teacher?.name ?? 'Teacher',
         fromRole: teacher?.role ?? 'TEACHER',
+        senderId: teacherId,
+        sendBatchId: `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
       };
 
       const createMessageNotification = async (userId: string) => {
