@@ -7,11 +7,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * NETWORK SETUP:
  * For local development on a physical device:
  * 1. Find your computer's local IP: Mac → ifconfig | grep "inet ", Windows → ipconfig
- * 2. Update EXPO_PUBLIC_API_URL in .env or .env.local (e.g. http://13.233.194.7:5000/api/v1)
+ * 2. Update EXPO_PUBLIC_API_URL in .env or .env.local (e.g. http://3.7.234.38:5000/api/v1)
  * 3. Make sure your phone can reach the server (same network or public IP)
  * 4. Make sure server is running
  */
-const DEFAULT_API_URL = 'http://13.233.194.7:5000/api/v1';
+const DEFAULT_API_URL = 'http://3.7.234.38:5000/api/v1';
 
 const envApiUrl =
   typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL : undefined;
@@ -133,7 +133,7 @@ export class ApiClient {
           );
           if (loopback) {
             console.error(
-              '[API] If you are on a physical phone, set EXPO_PUBLIC_API_URL to your server IP (e.g. http://13.233.194.7:5000/api/v1) in .env.local and restart Expo.'
+              '[API] If you are on a physical phone, set EXPO_PUBLIC_API_URL to your server IP (e.g. http://3.7.234.38:5000/api/v1) in .env.local and restart Expo.'
             );
           }
           console.error('[API] Current baseURL:', url);

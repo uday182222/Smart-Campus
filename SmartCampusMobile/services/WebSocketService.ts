@@ -6,7 +6,7 @@
 import { io, Socket } from 'socket.io-client';
 import { ServiceResult } from './ServiceResultsAPI';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://13.233.194.7:5000/api/v1';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://3.7.234.38:5000/api/v1';
 const WS_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/^http/, 'ws');
 
 export interface WebSocketEvents {
